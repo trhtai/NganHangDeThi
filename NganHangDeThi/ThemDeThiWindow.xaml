@@ -1,0 +1,111 @@
+﻿<Window x:Class="NganHangDeThi.ThemDeThiWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:NganHangDeThi" 
+        xmlns:uc="clr-namespace:NganHangDeThi.MyUserControl"
+        mc:Ignorable="d"
+        Title="ThemDeThiWindow" Height="810" Width="600"
+        WindowStartupLocation="CenterScreen"
+        WindowStyle="None">
+
+    <Border Background="#ffffff" MouseDown="Border_MouseDown">
+        <Border.Effect>
+            <DropShadowEffect Direction="-130" BlurRadius="30" ShadowDepth="5" Opacity="0.1"/>
+        </Border.Effect>
+
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="auto" />
+                <RowDefinition Height="auto" />
+                <RowDefinition Height="auto" />
+                <RowDefinition Height="auto" />
+                <RowDefinition Height="auto" />
+                <RowDefinition Height="auto" />
+                <RowDefinition Height="auto" />
+                <RowDefinition Height="auto" />
+                <RowDefinition Height="auto" />
+                <RowDefinition Height="auto" />
+                <RowDefinition Height="auto" />
+                <RowDefinition Height="auto" />
+            </Grid.RowDefinitions>
+
+            <!--Form Title-->
+            <Grid Grid.Row="0" Margin="20 20 20 12">
+                <TextBlock TextAlignment="Center" FontWeight="SemiBold" Text="THIẾT LẬP ĐỀ THI" Foreground="#374655" FontSize="18" Margin="15 0 0 0" VerticalAlignment="Center"/>
+            </Grid>
+
+            <StackPanel Grid.Row="1" Orientation="Vertical">
+                <uc:MyTextBoxControl Text="{Binding TieuDe}" Caption="Tiêu đề" Hint="KIỂM TRA CHẤT LƯỢNG CUỐI KÌ..." />
+            </StackPanel>
+
+            <StackPanel Grid.Row="2" Orientation="Vertical">
+                <uc:MyTextBoxControl Text="{Binding KyThi}" Caption="Kỳ thi" />
+            </StackPanel>
+
+            <StackPanel Grid.Row="3" Orientation="Vertical">
+                <TextBlock Padding="8" Text="Lớp học" FontFamily="13" Margin="12 0 10 0"
+                    Foreground="#868686" HorizontalAlignment="Left" VerticalAlignment="Center" />
+                <ComboBox Style="{StaticResource ComboBoxFlatStyle}" Width="560" Height="30" Margin="12 0 10 0"
+                   ItemsSource="{Binding DsLopHoc}" 
+                    SelectedItem="{Binding SelectedLopHoc}" DisplayMemberPath="MaLop"/>
+            </StackPanel>
+
+            <StackPanel Grid.Row="4" Orientation="Vertical">
+                <TextBlock Padding="8" Text="Môn học" FontFamily="13" Margin="12 0 10 0"
+                    Foreground="#868686" HorizontalAlignment="Left" VerticalAlignment="Center" />
+                <ComboBox Style="{StaticResource ComboBoxFlatStyle}" Width="560" Height="30" Margin="12 0 10 0"
+                   ItemsSource="{Binding DsMonHoc}" 
+                      SelectedItem="{Binding SelectedMonHoc}" DisplayMemberPath="TenMon"/>
+            </StackPanel>
+
+            <StackPanel Grid.Row="5" Orientation="Vertical">
+                <uc:MyTextBoxControl Text="{Binding ThoiGianLamBai}" Caption="Thời gian làm bài (phút)" />
+            </StackPanel>
+
+            <StackPanel Grid.Row="6" Orientation="Vertical">
+                <uc:MyTextBoxControl Text="{Binding SoLuongDe}" Caption="Số lượng đề" />
+            </StackPanel>
+
+            <StackPanel Grid.Row="7" Orientation="Vertical">
+                <uc:MyTextBoxControl Text="{Binding MaDeBatDau}" Caption="Mã đề bắt đầu" Hint="101" />
+            </StackPanel>
+
+            <StackPanel Grid.Row="8" Orientation="Vertical">
+                <uc:MyTextBoxControl Text="{Binding GhiChu}" Caption="Ghi chú" />
+            </StackPanel>
+
+            <StackPanel Grid.Row="9" Orientation="Vertical">
+                <TextBlock Padding="8" Text="Ma trận" FontFamily="13" Margin="12 0 10 0"
+                    Foreground="#868686" HorizontalAlignment="Left" VerticalAlignment="Center" />
+                <ComboBox Style="{StaticResource ComboBoxFlatStyle}" Width="560" Height="30" Margin="12 0 10 0"
+                   ItemsSource="{Binding DsMaTran}" 
+                      SelectedItem="{Binding SelectedMaTran}" DisplayMemberPath="Name"/>
+            </StackPanel>
+
+            <StackPanel Grid.Row="10" Orientation="Horizontal">
+                <TextBlock Padding="8" Text="Trộn đáp án" FontFamily="13" Margin="12 0 10 0"
+                    Foreground="#868686" HorizontalAlignment="Left" VerticalAlignment="Center" />
+                <CheckBox Grid.Row="6" Grid.Column="1" IsChecked="{Binding ChoPhepTronDapAn}" Margin="0 8 0 0"/>
+            </StackPanel>
+
+            <Border Padding="0 10" Grid.Row="11" Background="#f6f6f6" Margin="0 10 0 0">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <Button Grid.Column="1" Click="BtnTao_Click" Content="Tạo" HorizontalAlignment="Right" Margin="0 0 20 0" Style="{StaticResource SaveButton}">
+                        <Button.Effect>
+                            <DropShadowEffect Direction="-120" BlurRadius="10" Opacity="0.3" ShadowDepth="5" Color="#4880FF"/>
+                        </Button.Effect>
+                    </Button>
+
+                    <Button Grid.Row="0" Content="Hủy" HorizontalAlignment="Left" Margin="20 0 0 0" Style="{StaticResource BackButton}" Width="150" Click="BtnHuy_Click"/>
+                </Grid>
+            </Border>
+        </Grid>
+    </Border>
+</Window>

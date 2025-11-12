@@ -1,0 +1,85 @@
+﻿<Window x:Class="NganHangDeThi.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:NganHangDeThi"
+        xmlns:Icon="http://metro.mahapps.com/winfx/xaml/iconpacks"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="720" Width="1200"
+        WindowStartupLocation="CenterScreen"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent">
+    
+    <Border Name="MainBorder" Background="{StaticResource BgColor}" CornerRadius="30" MouseDown="MainBorder_MouseDown" MouseLeftButtonDown="MainBorder_MouseLeftButtonDown">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="200" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <Grid.RowDefinitions>
+                <RowDefinition Height="50" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <!--Menu-->
+            <Border Grid.Column="0" Grid.Row="1" Background="{StaticResource PrimaryColor}" CornerRadius="0 50 0 30">
+                <StackPanel>
+                    <!--Logo-->
+                    <Border Width="100" Height="100" Padding="3" Background="White" CornerRadius="100" 
+                            DockPanel.Dock="Top" HorizontalAlignment="Left" Margin="40 -30 0 0">
+                        <Ellipse>
+                            <Ellipse.Fill>
+                                <ImageBrush  ImageSource="/Assets/Images/logo-removebg.png" />
+                            </Ellipse.Fill>
+                        </Ellipse>
+                    </Border>
+
+                    <!--Menu Item-->
+                    <StackPanel Name="MenuPanel" Orientation="Vertical">
+                        <Button Name="BtnRaDeThi" Tag="Active"
+                                Style="{StaticResource MenuButton}" 
+                                Click="MenuButtonClick">
+                            <StackPanel Orientation="Horizontal">
+                                <Icon:PackIconMaterial Kind="ClipboardTextOutline" Style="{StaticResource MenuButtonIcon}" />
+                                <TextBlock Text="Ra đề" />
+                            </StackPanel>
+                        </Button>
+                        <Button Name="BtnNganHangCauHoi" 
+                                Style="{StaticResource MenuButton}" 
+                                Click="MenuButtonClick">
+                            <StackPanel Orientation="Horizontal">
+                                <Icon:PackIconMaterial Kind="DatabaseOutline" Style="{StaticResource MenuButtonIcon}" />
+                                <TextBlock Text="Ngân hàng câu hỏi" />
+                            </StackPanel>
+                        </Button>
+                        <Button Name="BtnQuanTriHeThong" 
+                                Style="{StaticResource MenuButton}" 
+                                Click="MenuButtonClick">
+                            <StackPanel Orientation="Horizontal">
+                                <Icon:PackIconMaterial Kind="AccountGroupOutline" Style="{StaticResource MenuButtonIcon}" />
+                                <TextBlock Text="Quản trị hệ thống" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+
+                </StackPanel>
+            </Border>
+
+            <!--Right Button-->
+            <!--<Button Grid.Column="1" Grid.Row="0" Style="{StaticResource TopButton}" Margin="0 0 20 0" Background="#dcdcdc" HorizontalAlignment="Right">
+                <Icon:PackIconMaterial Kind="Cog" />
+            </Button>-->
+            <Button Name="BtnCloseMainWindow" Click="BtnCloseMainWindow_Click" Grid.Column="1" Grid.Row="0" Style="{StaticResource TopButton}"  Margin="0 0 20 0" Background="#dcdcdc" HorizontalAlignment="Right">
+                <Icon:PackIconMaterial Kind="CloseCircle" />
+            </Button>
+
+            <!--Show main content-->
+            <Border CornerRadius="0 0 30 0" Padding="4" Grid.Column="1" Grid.Row="1">
+                <ContentControl x:Name="MainContent" />
+            </Border>
+        </Grid>
+    </Border>
+</Window>
