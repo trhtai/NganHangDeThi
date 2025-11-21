@@ -16,6 +16,12 @@ public class CauHoi : IEntity<int>
     public int ChuongId { get; set; }
     public Chuong? Chuong { get; set; }
 
+    // --- BỔ SUNG MỚI ---
+    public int? ParentId { get; set; } // Null nếu là câu đơn hoặc câu cha
+    public CauHoi? Parent { get; set; } // Link đến câu cha
+    public ICollection<CauHoi> DsCauHoiCon { get; set; } = []; // Danh sách câu con
+    // -------------------
+
     public ICollection<CauTraLoi> DsCauTraLoi { get; set; } = []; 
     
     

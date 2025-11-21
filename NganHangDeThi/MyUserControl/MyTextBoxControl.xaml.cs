@@ -27,7 +27,6 @@ public partial class MyTextBoxControl : UserControl
 
     public static readonly DependencyProperty HintProperty = DependencyProperty.Register("Hint", typeof(string), typeof(MyTextBoxControl));
 
-
     public string Caption
     {
         get { return (string)GetValue(CaptionProperty); }

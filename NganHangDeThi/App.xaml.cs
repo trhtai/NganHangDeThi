@@ -34,7 +34,7 @@ public partial class App : Application
                     var sqlConnectionStringBuilder = new SqlConnectionStringBuilder
                     {
                         DataSource = "localhost",
-                        InitialCatalog = "QuanLiDeThiDb",
+                        InitialCatalog = "QuanLiDeThiDbV2",
                         UserID = "sa",
                         Password = "StrongP@ssw0rd123!",
                         IntegratedSecurity = false,

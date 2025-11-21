@@ -12,8 +12,8 @@ using NganHangDeThi.Data.DataContext;
 namespace NganHangDeThi.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250710040318_V1")]
-    partial class V1
+    [Migration("20251121035633_InitDb")]
+    partial class InitDb
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -52,9 +52,14 @@ namespace NganHangDeThi.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int?>("ParentId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("ChuongId");
+
+                    b.HasIndex("ParentId");
 
                     b.ToTable("CauHoi");
                 });
@@ -103,6 +108,9 @@ namespace NganHangDeThi.Migrations
 
                     b.Property<int>("ChiTietDeThiId")
                         .HasColumnType("int");
+
+                    b.Property<string>("HinhAnh")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("LaDapAnDung")
                         .HasColumnType("bit");
@@ -359,7 +367,14 @@ namespace NganHangDeThi.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("NganHangDeThi.Data.Entity.CauHoi", "Parent")
+                        .WithMany("DsCauHoiCon")
+                        .HasForeignKey("ParentId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
                     b.Navigation("Chuong");
+
+                    b.Navigation("Parent");
                 });
 
             modelBuilder.Entity("NganHangDeThi.Data.Entity.CauTraLoi", b =>
@@ -481,6 +496,8 @@ namespace NganHangDeThi.Migrations
 
             modelBuilder.Entity("NganHangDeThi.Data.Entity.CauHoi", b =>
                 {
+                    b.Navigation("DsCauHoiCon");
+
                     b.Navigation("DsCauTraLoi");
                 });
 

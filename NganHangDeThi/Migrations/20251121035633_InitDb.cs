@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace NganHangDeThi.Migrations
 {
     /// <inheritdoc />
-    public partial class V1 : Migration
+    public partial class InitDb : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -153,11 +153,17 @@ namespace NganHangDeThi.Migrations
                     Loai = table.Column<int>(type: "int", nullable: false),
                     DaRaDe = table.Column<bool>(type: "bit", nullable: false),
                     HinhAnh = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    ChuongId = table.Column<int>(type: "int", nullable: false)
+                    ChuongId = table.Column<int>(type: "int", nullable: false),
+                    ParentId = table.Column<int>(type: "int", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_CauHoi", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_CauHoi_CauHoi_ParentId",
+                        column: x => x.ParentId,
+                        principalTable: "CauHoi",
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_CauHoi_Chuong_ChuongId",
                         column: x => x.ChuongId,
@@ -252,6 +258,7 @@ namespace NganHangDeThi.Migrations
                     NoiDung = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     LaDapAnDung = table.Column<bool>(type: "bit", nullable: false),
                     ViTri = table.Column<byte>(type: "tinyint", nullable: false),
+                    HinhAnh = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     ChiTietDeThiId = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
@@ -269,6 +276,11 @@ namespace NganHangDeThi.Migrations
                 name: "IX_CauHoi_ChuongId",
                 table: "CauHoi",
                 column: "ChuongId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_CauHoi_ParentId",
+                table: "CauHoi",
+                column: "ParentId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_CauTraLoi_CauHoiId",

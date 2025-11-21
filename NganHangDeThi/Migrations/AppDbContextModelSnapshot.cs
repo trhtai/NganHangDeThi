@@ -49,9 +49,14 @@ namespace NganHangDeThi.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int?>("ParentId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("ChuongId");
+
+                    b.HasIndex("ParentId");
 
                     b.ToTable("CauHoi");
                 });
@@ -359,7 +364,14 @@ namespace NganHangDeThi.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("NganHangDeThi.Data.Entity.CauHoi", "Parent")
+                        .WithMany("DsCauHoiCon")
+                        .HasForeignKey("ParentId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
                     b.Navigation("Chuong");
+
+                    b.Navigation("Parent");
                 });
 
             modelBuilder.Entity("NganHangDeThi.Data.Entity.CauTraLoi", b =>
@@ -481,6 +493,8 @@ namespace NganHangDeThi.Migrations
 
             modelBuilder.Entity("NganHangDeThi.Data.Entity.CauHoi", b =>
                 {
+                    b.Navigation("DsCauHoiCon");
+
                     b.Navigation("DsCauTraLoi");
                 });
 

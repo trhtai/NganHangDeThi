@@ -4,9 +4,21 @@ namespace NganHangDeThi.Common.Enum;
 
 public enum LoaiCauHoi
 {
-    [Description("Trắc nghiệm")]
-    TracNghiemMotDapAn = 1,       // Câu hỏi trắc nghiệm 1 đáp án đúng (SingleChoice)
+    [Description("Trắc nghiệm 1 đáp án")]
+    TracNghiemMotDapAn = 1,
 
     [Description("Tự luận")]
-    TuLuan = 2                    // Câu hỏi tự luận (Essay)
+    TuLuan = 2,
+
+    [Description("Trắc nghiệm nhiều đáp án")]
+    TracNghiemNhieuDapAn = 3,
+
+    //[Description("Đúng sai")]
+    //DungSai = 4,
+
+    [Description("Điền khuyết")]
+    DienKhuyet = 5,
+
+    [Description("Câu chùm")]
+    CauChum = 6
 }

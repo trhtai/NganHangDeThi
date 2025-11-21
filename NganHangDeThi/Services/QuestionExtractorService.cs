@@ -1,5 +1,5 @@
-﻿using DocumentFormat.OpenXml.Drawing;
-using DocumentFormat.OpenXml.Packaging;
+﻿using DocumentFormat.OpenXml.Packaging;
+using DocumentFormat.OpenXml.Wordprocessing;
 using Microsoft.Extensions.Options;
 using NganHangDeThi.Common.Configs;
 using NganHangDeThi.Common.Enum;
@@ -7,9 +7,11 @@ using NganHangDeThi.Data.DataContext;
 using NganHangDeThi.Data.Entity;
 using NganHangDeThi.Models;
 using System.IO;
+using System.Text;
 using System.Text.RegularExpressions;
 using Paragraph = DocumentFormat.OpenXml.Wordprocessing.Paragraph;
 using Path = System.IO.Path;
+using Run = DocumentFormat.OpenXml.Wordprocessing.Run;
 
 namespace NganHangDeThi.Services;
 
@@ -18,14 +20,14 @@ public class QuestionExtractorService
     private readonly AppDbContext _dbContext;
     private readonly string _baseImageFolder;
     private readonly string _sessionImageFolder;
-    private readonly Guid _sessionId;
+
+    private readonly Regex _tagRegex = new(@"^<(NB|TH|VD|VDC|G)>", RegexOptions.IgnoreCase);
 
     public QuestionExtractorService(AppDbContext dbContext, IOptions<ImageStorageOptions> options)
     {
         _dbContext = dbContext;
         _baseImageFolder = options.Value.FolderPath;
-        _sessionId = Guid.NewGuid();
-        _sessionImageFolder = Path.Combine(_baseImageFolder, $"temp-{_sessionId}");
+        _sessionImageFolder = Path.Combine(_baseImageFolder, $"temp-{Guid.NewGuid()}");
         Directory.CreateDirectory(_sessionImageFolder);
     }
 
@@ -35,213 +37,326 @@ public class QuestionExtractorService
         var paragraphs = doc.MainDocumentPart!.Document.Body!.Elements<Paragraph>().ToList();
 
         var result = new List<CauHoiRaw>();
-        List<CauTraLoiRaw> currentAnswers = new();
-        string? currentContent = null;
-        string? currentHinhAnh = null;
-        MucDoCauHoi mucDo = default;
-        LoaiCauHoi loai = default;
-        byte viTri = 1;
+
+        CauHoiRaw? currentGroup = null;
+        CauHoiRaw? currentQuestion = null;
 
         for (int i = 0; i < paragraphs.Count; i++)
         {
-            var paragraph = paragraphs[i];
-            string text = paragraph.InnerText.Trim();
+            var para = paragraphs[i];
+            string rawText = para.InnerText.Trim();
 
-            if (string.IsNullOrWhiteSpace(text) && !ContainsImage(paragraph))
-                continue;
-
-            // Nếu là câu hỏi
-            if (Regex.IsMatch(text, @"^<T?(NB|TH|VD|VDC)>", RegexOptions.IgnoreCase))
+            bool shouldCloseGroup = rawText.Contains("</G>", StringComparison.OrdinalIgnoreCase);
+            if (shouldCloseGroup)
             {
-                if (currentContent != null && currentAnswers.Any())
+                rawText = Regex.Replace(rawText, "</G>", "", RegexOptions.IgnoreCase).Trim();
+            }
+
+            string htmlContent = ConvertToHtml(para, doc);
+            if (shouldCloseGroup)
+            {
+                htmlContent = Regex.Replace(htmlContent, "&lt;/G&gt;", "", RegexOptions.IgnoreCase);
+                htmlContent = Regex.Replace(htmlContent, "</G>", "", RegexOptions.IgnoreCase);
+            }
+
+            if (string.IsNullOrWhiteSpace(rawText) && ExtractImage(para, doc) == null)
+            {
+                if (shouldCloseGroup) goto CloseGroupStep;
+                continue;
+            }
+
+            // 1. Bắt đầu nhóm <G>
+            if (rawText.StartsWith("<G>", StringComparison.OrdinalIgnoreCase))
+            {
+                SaveCurrentQuestion(result, currentGroup, currentQuestion);
+                currentQuestion = null;
+
+                // Check ngay dòng đầu tiên
+                bool isClozeTest = rawText.Contains("___") || htmlContent.Contains("___");
+                LoaiCauHoi groupType = isClozeTest ? LoaiCauHoi.DienKhuyet : LoaiCauHoi.TracNghiemMotDapAn;
+
+                currentGroup = new CauHoiRaw
                 {
-                    result.Add(new CauHoiRaw(currentContent.Trim(), mucDo, loai, new(currentAnswers), currentHinhAnh));
-                    currentAnswers.Clear();
-                    currentHinhAnh = null;
-                    viTri = 1;
-                }
+                    Loai = groupType,
+                    NoiDung = CleanTags(htmlContent, "<G>"),
+                    MucDo = MucDoCauHoi.ThongHieu
+                };
+            }
+            // 2. Bắt đầu câu hỏi <NB>, <TH>...
+            else if (_tagRegex.IsMatch(rawText))
+            {
+                SaveCurrentQuestion(result, currentGroup, currentQuestion);
 
-                loai = text.StartsWith("<T") ? LoaiCauHoi.TuLuan : LoaiCauHoi.TracNghiemMotDapAn;
-                mucDo = text.Contains("NB") ? MucDoCauHoi.NhanBiet :
-                        text.Contains("TH") ? MucDoCauHoi.ThongHieu :
-                        text.Contains("VD") && !text.Contains("VDC") ? MucDoCauHoi.VanDung :
-                        MucDoCauHoi.VanDungCao;
+                currentQuestion = new CauHoiRaw();
+                string tag = _tagRegex.Match(rawText).Value;
 
-                currentContent = Regex.Replace(text, @"^<T?(NB|TH|VD|VDC)>", "").Trim();
-                currentHinhAnh = null;
-
-                while (i + 1 < paragraphs.Count)
+                currentQuestion.MucDo = ParseMucDo(tag);
+                currentQuestion.Loai = LoaiCauHoi.TracNghiemMotDapAn;
+                currentQuestion.NoiDung = CleanTags(htmlContent, tag);
+            }
+            // 3. Đáp án <$>, <$*>
+            else if (rawText.StartsWith("<$"))
+            {
+                if (currentQuestion != null)
                 {
-                    var next = paragraphs[i + 1];
-                    string nextText = next.InnerText.Trim();
+                    bool hasRedColor = htmlContent.Contains("color:red") || htmlContent.Contains("color: red") || htmlContent.Contains("color:#FF0000");
+                    bool isFixed = rawText.Contains("<@>");
 
-                    if (nextText.StartsWith("<$")) break;
-                    i++;
+                    string cleanAns = CleanTags(htmlContent, "<$>");
+                    cleanAns = cleanAns.Replace("<@>", "").Replace("<$*>", "");
 
-                    // Chèn tag <img> nếu đoạn là ảnh
-                    if (ContainsImage(next))
-                    {
-                        if (currentHinhAnh == null)
-                            currentHinhAnh = SaveImageFromParagraph(next, doc);
-
-                        currentContent += " <img>";
-                    }
-
-                    // Nối đoạn text nếu có
-                    if (!string.IsNullOrWhiteSpace(nextText))
-                    {
-                        currentContent += " " + nextText;
-                    }
+                    currentQuestion.DapAn.Add(new CauTraLoiRaw(
+                        cleanAns, hasRedColor, (byte)(currentQuestion.DapAn.Count + 1), !isFixed, ExtractImage(para, doc)
+                    ));
                 }
             }
-            // Nếu là đáp án
-            else if (text.StartsWith("<$"))
+            // 4. Nội dung tiếp diễn (xuống dòng)
+            else
             {
-                bool daoViTri = text.Contains("<@>");
-                bool laDapAnDung = text.StartsWith("<$*>");
+                if (currentQuestion != null)
+                {
+                    if (currentQuestion.DapAn.Count > 0)
+                    {
+                        var lastAns = currentQuestion.DapAn.Last();
+                        lastAns.NoiDung += "<br/>" + htmlContent;
+                    }
+                    else
+                    {
+                        currentQuestion.NoiDung += "<br/>" + htmlContent;
+                    }
+                }
+                else if (currentGroup != null)
+                {
+                    currentGroup.NoiDung += "<br/>" + htmlContent;
 
-                string nd = text
-                    .Replace("<$*>", "")
-                    .Replace("<$>", "")
-                    .Replace("<@>", "")
-                    .Trim();
+                    // --- FIX QUAN TRỌNG: Check tiếp diễn cho Điền Khuyết ---
+                    // Nếu dòng nối tiếp này có chứa "___" -> Cập nhật nhóm thành Điền Khuyết ngay lập tức
+                    if (currentGroup.Loai != LoaiCauHoi.DienKhuyet && (rawText.Contains("___") || htmlContent.Contains("___")))
+                    {
+                        currentGroup.Loai = LoaiCauHoi.DienKhuyet;
+                    }
+                    // -------------------------------------------------------
+                }
+            }
 
-                var imagePath = SaveImageFromParagraph(paragraph, doc);
-                if (imagePath != null)
-                    nd += " <img>";
+        // Xử lý đóng nhóm
+        CloseGroupStep:
+            if (shouldCloseGroup)
+            {
+                SaveCurrentQuestion(result, currentGroup, currentQuestion);
+                currentQuestion = null;
 
-                currentAnswers.Add(new CauTraLoiRaw(nd, laDapAnDung, viTri++, !daoViTri, imagePath));
+                if (currentGroup != null)
+                {
+                    // Logic cập nhật ngược (chỉ chạy nếu KHÔNG PHẢI là Điền khuyết)
+                    // Vì nếu đã là Điền khuyết (do có ___) thì ưu tiên giữ nguyên là Điền khuyết
+                    if (currentGroup.Loai != LoaiCauHoi.DienKhuyet && currentGroup.CauHoiCon.Any())
+                    {
+                        if (currentGroup.CauHoiCon.Any(c => c.Loai == LoaiCauHoi.TuLuan))
+                            currentGroup.Loai = LoaiCauHoi.TuLuan;
+                        else if (currentGroup.CauHoiCon.Any(c => c.Loai == LoaiCauHoi.TracNghiemNhieuDapAn))
+                            currentGroup.Loai = LoaiCauHoi.TracNghiemNhieuDapAn;
+                    }
+
+                    result.Add(currentGroup);
+                    currentGroup = null;
+                }
             }
         }
 
-        if (currentContent != null && currentAnswers.Count != 0)
+        SaveCurrentQuestion(result, currentGroup, currentQuestion);
+        if (currentGroup != null)
         {
-            result.Add(new CauHoiRaw(currentContent.Trim(), mucDo, loai, currentAnswers, currentHinhAnh));
+            if (currentGroup.Loai != LoaiCauHoi.DienKhuyet && currentGroup.CauHoiCon.Any())
+            {
+                if (currentGroup.CauHoiCon.Any(c => c.Loai == LoaiCauHoi.TuLuan))
+                    currentGroup.Loai = LoaiCauHoi.TuLuan;
+                else if (currentGroup.CauHoiCon.Any(c => c.Loai == LoaiCauHoi.TracNghiemNhieuDapAn))
+                    currentGroup.Loai = LoaiCauHoi.TracNghiemNhieuDapAn;
+            }
+            result.Add(currentGroup);
         }
 
         return result;
     }
 
-    private bool ContainsImage(Paragraph para)
+    private void SaveCurrentQuestion(List<CauHoiRaw> result, CauHoiRaw? group, CauHoiRaw? question)
     {
-        return para.Descendants<Blip>().Any();
+        if (question == null) return;
+
+        int totalDapAn = question.DapAn.Count;
+        int correctCount = question.DapAn.Count(x => x.LaDapAnDung);
+
+        // Phân loại câu hỏi con
+        if (totalDapAn == 1) question.Loai = LoaiCauHoi.TuLuan;
+        else if (correctCount > 1) question.Loai = LoaiCauHoi.TracNghiemNhieuDapAn;
+        else question.Loai = LoaiCauHoi.TracNghiemMotDapAn;
+
+        if (group != null)
+            group.CauHoiCon.Add(question);
+        else
+            result.Add(question);
     }
 
-    private string? SaveImageFromParagraph(Paragraph para, WordprocessingDocument doc)
+    // --- Helper functions (ParseMucDo, CleanTags, ConvertToHtml, ExtractImage...) giữ nguyên ---
+    private MucDoCauHoi ParseMucDo(string tag)
     {
-        if (!Directory.Exists(_sessionImageFolder))
-            Directory.CreateDirectory(_sessionImageFolder);
-
-        var blip = para.Descendants<Blip>().FirstOrDefault();
-        if (blip == null) return null;
-
-        var embed = blip.Embed?.Value;
-        if (string.IsNullOrEmpty(embed)) return null;
-
-        var imagePart = (ImagePart)doc.MainDocumentPart!.GetPartById(embed);
-        var imageExtension = GetImageExtension(imagePart.ContentType);
-        var fileName = $"{Guid.NewGuid()}{imageExtension}";
-        var imagePath = Path.Combine(_sessionImageFolder, fileName);
-
-        using var stream = imagePart.GetStream();
-        using var file = File.Create(imagePath);
-        stream.CopyTo(file);
-
-        return fileName;
+        tag = tag.ToUpper();
+        if (tag.Contains("VDC")) return MucDoCauHoi.VanDungCao;
+        if (tag.Contains("VD")) return MucDoCauHoi.VanDung;
+        if (tag.Contains("TH")) return MucDoCauHoi.ThongHieu;
+        return MucDoCauHoi.NhanBiet;
     }
 
-    private string GetImageExtension(string contentType)
+    private string CleanTags(string html, string tagToRemove)
     {
-        return contentType switch
+        string pattern = Regex.Escape(tagToRemove).Replace("<", "&lt;").Replace(">", "&gt;");
+        var res = Regex.Replace(html, tagToRemove, "", RegexOptions.IgnoreCase);
+        res = Regex.Replace(res, pattern, "", RegexOptions.IgnoreCase);
+        res = res.Replace("&lt;@&gt;", "").Replace("<@>", "");
+        return res.Trim();
+    }
+
+    private string ConvertToHtml(Paragraph p, WordprocessingDocument doc, bool checkColorOnly = false)
+    {
+        StringBuilder sb = new StringBuilder();
+        foreach (var run in p.Descendants<Run>())
         {
-            "image/png" => ".png",
-            "image/jpeg" => ".jpg",
-            "image/gif" => ".gif",
-            _ => ".img"
-        };
+            string text = run.InnerText;
+            if (string.IsNullOrEmpty(text))
+            {
+                var imgPath = ExtractImageFromRun(run, doc);
+                if (imgPath != null) sb.Append($"{{{{IMG:{imgPath}}}}}");
+                continue;
+            }
+
+            text = System.Net.WebUtility.HtmlEncode(text);
+            var props = run.RunProperties;
+            if (props != null)
+            {
+                if (checkColorOnly)
+                {
+                    if (props.Color != null && (props.Color.Val == "FF0000" || props.Color.Val == "red")) return "color: red";
+                    continue;
+                }
+                if (props.Bold != null) text = $"<b>{text}</b>";
+                if (props.Italic != null) text = $"<i>{text}</i>";
+                if (props.Underline != null) text = $"<u>{text}</u>";
+                if (props.VerticalTextAlignment != null)
+                {
+                    if (props.VerticalTextAlignment.Val == VerticalPositionValues.Superscript) text = $"<sup>{text}</sup>";
+                    else if (props.VerticalTextAlignment.Val == VerticalPositionValues.Subscript) text = $"<sub>{text}</sub>";
+                }
+                if (props.Color != null && (props.Color.Val == "FF0000" || props.Color.Val == "red"))
+                {
+                    text = $"<span style='color:red'>{text}</span>";
+                }
+            }
+            sb.Append(text);
+        }
+        return sb.ToString();
+    }
+
+    private string? ExtractImage(Paragraph para, WordprocessingDocument doc)
+    {
+        foreach (var run in para.Descendants<Run>())
+        {
+            var img = ExtractImageFromRun(run, doc);
+            if (img != null) return img;
+        }
+        return null;
+    }
+
+    private string? ExtractImageFromRun(Run run, WordprocessingDocument doc)
+    {
+        var blip = run.Descendants<DocumentFormat.OpenXml.Drawing.Blip>().FirstOrDefault();
+        if (blip == null || string.IsNullOrEmpty(blip.Embed)) return null;
+
+        var imagePart = (ImagePart)doc.MainDocumentPart!.GetPartById(blip.Embed);
+        var fileName = $"{Guid.NewGuid()}.png";
+        var savePath = Path.Combine(_sessionImageFolder, fileName);
+
+        using (var stream = imagePart.GetStream())
+        using (var fileStream = File.Create(savePath))
+        {
+            stream.CopyTo(fileStream);
+        }
+        return fileName;
     }
 
     public void CleanupTemporaryImages()
     {
-        if (Directory.Exists(_sessionImageFolder))
-        {
-            Directory.Delete(_sessionImageFolder, true);
-        }
+        if (Directory.Exists(_sessionImageFolder)) Directory.Delete(_sessionImageFolder, true);
     }
 
     public void CommitImages()
     {
         if (!Directory.Exists(_sessionImageFolder)) return;
-
         foreach (var file in Directory.GetFiles(_sessionImageFolder))
         {
-            var fileName = Path.GetFileName(file);
-            var targetPath = Path.Combine(_baseImageFolder, fileName);
-
-            if (!File.Exists(targetPath))
-            {
-                File.Move(file, targetPath);
-            }
+            var dest = Path.Combine(_baseImageFolder, Path.GetFileName(file));
+            if (!File.Exists(dest)) File.Move(file, dest);
         }
-
         Directory.Delete(_sessionImageFolder, true);
     }
 
     public int SaveToDatabase(List<CauHoiRaw> questions, int chuongId)
     {
         using var transaction = _dbContext.Database.BeginTransaction();
-
         try
         {
-            var noiDungCauHoiTrongDb = _dbContext.CauHoi
-                .Where(c => c.ChuongId == chuongId)
-                .Select(c => c.NoiDung.Trim().ToLower())
-                .ToHashSet();
-
-            int soCauHoiDaThem = 0;
-
+            int count = 0;
             foreach (var q in questions)
             {
-                var noiDungChuanHoa = q.NoiDung.Trim().ToLower();
-
-                if (noiDungCauHoiTrongDb.Contains(noiDungChuanHoa))
-                    continue;
-
-                var cauHoi = new CauHoi
-                {
-                    NoiDung = q.NoiDung,
-                    MucDo = q.MucDo,
-                    Loai = q.Loai,
-                    ChuongId = chuongId,
-                    HinhAnh = q.HinhAnh,
-                    DaRaDe = false,
-                    DsCauTraLoi = []
-                };
-
-                foreach (var d in q.DapAn)
-                {
-                    cauHoi.DsCauTraLoi.Add(new CauTraLoi
-                    {
-                        NoiDung = d.NoiDung,
-                        LaDapAnDung = d.LaDapAnDung,
-                        ViTriGoc = d.ViTriGoc,
-                        DaoViTri = d.DaoViTri,
-                        HinhAnh = d.HinhAnh
-                    });
-                }
-
-                _dbContext.CauHoi.Add(cauHoi);
-                soCauHoiDaThem++;
+                count += SaveQuestionRecursive(q, chuongId, null);
             }
-
             _dbContext.SaveChanges();
             transaction.Commit();
-            return soCauHoiDaThem;
+            return count;
         }
         catch
         {
             transaction.Rollback();
             throw;
         }
+    }
+
+    private int SaveQuestionRecursive(CauHoiRaw qRaw, int chuongId, int? parentId)
+    {
+        var entity = new CauHoi
+        {
+            NoiDung = qRaw.NoiDung,
+            MucDo = qRaw.MucDo,
+            Loai = qRaw.Loai,
+            ChuongId = chuongId,
+            HinhAnh = qRaw.HinhAnh,
+            ParentId = parentId,
+            DaRaDe = false
+        };
+
+        foreach (var ans in qRaw.DapAn)
+        {
+            entity.DsCauTraLoi.Add(new CauTraLoi
+            {
+                NoiDung = ans.NoiDung,
+                LaDapAnDung = ans.LaDapAnDung,
+                ViTriGoc = ans.ViTriGoc,
+                DaoViTri = ans.DaoViTri,
+                HinhAnh = ans.HinhAnh
+            });
+        }
+
+        _dbContext.CauHoi.Add(entity);
+        _dbContext.SaveChanges();
+
+        int savedCount = 1;
+        if (qRaw.CauHoiCon.Any())
+        {
+            foreach (var child in qRaw.CauHoiCon)
+            {
+                savedCount += SaveQuestionRecursive(child, chuongId, entity.Id);
+            }
+        }
+        return savedCount;
     }
 }
