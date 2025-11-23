@@ -17,6 +17,7 @@
         <local1:EnumDescriptionConverter x:Key="EnumDescriptionConverter" />
         <local1:BoolToFontWeightConverter x:Key="BoolToFontWeightConverter" />
         <local1:IndexConverter x:Key="IndexConverter" />
+        <local1:BoolToBrushConverter x:Key="BoolToBrushConverter" />
     </Window.Resources>
 
     <Border Name="MainBorder" Background="{StaticResource BgColor}" MouseDown="MainBorder_MouseDown" MouseLeftButtonDown="MainBorder_MouseLeftButtonDown">
@@ -109,9 +110,10 @@
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
                                                 <TextBlock TextWrapping="Wrap" Margin="0,2">
-                                    <Run Text="• "/>
-                                    <Run Text="{Binding NoiDung, Converter={StaticResource HtmlDisplayConverter}}" FontWeight="{Binding LaDapAnDung, Converter={StaticResource BoolToFontWeightConverter}}" 
-                                         Foreground="{Binding LaDapAnDung, Converter={StaticResource BoolToFontWeightConverter}, ConverterParameter=Red}"/>
+    <Run Text="• "/>
+    <Run Text="{Binding NoiDung, Converter={StaticResource HtmlDisplayConverter}}" 
+         FontWeight="{Binding LaDapAnDung, Converter={StaticResource BoolToFontWeightConverter}}" 
+         Foreground="{Binding LaDapAnDung, Converter={StaticResource BoolToBrushConverter}}"/>
                                                 </TextBlock>
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
@@ -143,8 +145,10 @@
                                                             <ItemsControl.ItemTemplate>
                                                                 <DataTemplate>
                                                                     <TextBlock>
-                                                                        <Run Text="• "/>
-                                                                        <Run Text="{Binding NoiDung}" FontWeight="{Binding LaDapAnDung, Converter={StaticResource BoolToFontWeightConverter}}"/>
+                        <Run Text="• "/>
+                        <Run Text="{Binding NoiDung, Converter={StaticResource HtmlDisplayConverter}}" 
+                             FontWeight="{Binding LaDapAnDung, Converter={StaticResource BoolToFontWeightConverter}}"
+                             Foreground="{Binding LaDapAnDung, Converter={StaticResource BoolToBrushConverter}}"/>
                                                                     </TextBlock>
                                                                 </DataTemplate>
                                                             </ItemsControl.ItemTemplate>

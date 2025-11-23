@@ -1,5 +1,6 @@
 ﻿using System.Globalization;
 using System.Net;
+using System.Text.RegularExpressions;
 using System.Windows.Data;
 
 namespace NganHangDeThi.Converters;
@@ -18,7 +19,7 @@ public class HtmlDisplayConverter : IValueConverter
 
             // 3. (Tùy chọn) Loại bỏ các tag HTML còn lại (<b>, <sub>...) để grid nhìn sạch sẽ hơn
             // Nếu bạn muốn giữ lại text thuần túy để xem nhanh:
-            // decoded = Regex.Replace(decoded, "<.*?>", string.Empty); 
+            decoded = Regex.Replace(decoded, "<.*?>", string.Empty);
 
             return decoded;
         }

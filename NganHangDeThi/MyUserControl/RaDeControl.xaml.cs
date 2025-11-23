@@ -204,180 +204,12 @@ public partial class RaDeControl : UserControl, INotifyPropertyChanged
     private void BtnTaoDeThi_Click(object sender, RoutedEventArgs e)
     {
         var window = new ThemDeThiWindow(_dbContext);
-        if (window.ShowDialog() != true) return;
-
-        var soLuong = window.SoLuongDe;
-        var maDeBatDau = window.MaDeBatDau;
-        var maTran = window.SelectedMaTran;
-        var monHoc = window.SelectedMonHoc;
-        var lopHoc = window.SelectedLopHoc;
-        var tieuDe = window.TieuDe;
-        var choPhepTronDapAn = window.ChoPhepTronDapAn;
-        var thoiGianLamBai = window.ThoiGianLamBai;
-        var ghiChu = window.GhiChu;
-        var kyThi = window.KyThi;
-
-        var chiTietMaTrans = _dbContext.ChiTietMaTran
-            .Include(ct => ct.Chuong)
-            .Where(ct => ct.MaTranId == maTran.Id)
-            .ToList();
-
-        var cauHoiTheoDieuKien = _dbContext.CauHoi
-            .Include(c => c.DsCauTraLoi)
-            .Where(c => !c.DaRaDe && c.Chuong != null)
-            .ToList();
-
-        bool duCauHoi = chiTietMaTrans.All(ct =>
-            cauHoiTheoDieuKien.Count(c =>
-                c.MucDo == ct.MucDoCauHoi &&
-                c.Loai == ct.LoaiCauHoi &&
-                c.ChuongId == ct.ChuongId) >= ct.SoCau);
-
-        if (!duCauHoi)
+        // Window này giờ đã tự xử lý việc lưu Database bên trong nó
+        if (window.ShowDialog() == true)
         {
-            foreach (var ch in _dbContext.CauHoi)
-                ch.DaRaDe = false;
-            _dbContext.SaveChanges();
-
-            cauHoiTheoDieuKien = _dbContext.CauHoi
-                .Include(c => c.DsCauTraLoi)
-                .Where(c => c.Chuong != null)
-                .ToList();
-        }
-
-        var rand = new Random();
-        var cauHoiGoc = new List<CauHoi>();
-        foreach (var ct in chiTietMaTrans)
-        {
-            var selected = cauHoiTheoDieuKien
-                .Where(c => c.MucDo == ct.MucDoCauHoi &&
-                            c.Loai == ct.LoaiCauHoi &&
-                            c.ChuongId == ct.ChuongId)
-                .OrderBy(x => rand.Next())
-                .Take(ct.SoCau)
-                .ToList();
-            cauHoiGoc.AddRange(selected);
-        }
-
-        foreach (var ch in cauHoiGoc)
-            ch.DaRaDe = true;
-
-        var danhSachDeVuaTao = new List<DeThi>();
-        var danhSachDeThiExport = new List<DeThiExportData>();
-
-        for (int i = 0; i < soLuong; i++)
-        {
-            var deThi = new DeThi
-            {
-                TieuDe = tieuDe,
-                KyThi = kyThi,
-                MaDe = maDeBatDau + i,
-                MonHocId = monHoc.Id,
-                LopHocId = lopHoc.Id,
-                MaTranId = maTran.Id,
-                CreatedAt = DateTime.Now,
-                ThoiGianLamBai = thoiGianLamBai,
-                GhiChu = ghiChu,
-                DsChiTietDeThi = []
-            };
-
-            var deThiExport = new DeThiExportData
-            {
-                DeThi = deThi
-            };
-
-            var boCauHoiXaoTron = cauHoiGoc.OrderBy(_ => rand.Next()).ToList();
-
-            foreach (var ch in boCauHoiXaoTron)
-            {
-                List<CauTraLoi> dapAnDaTron;
-
-                if (choPhepTronDapAn)
-                {
-                    var dapAnDuocTron = ch.DsCauTraLoi.Where(d => d.DaoViTri).OrderBy(_ => rand.Next()).ToList();
-                    var dapAnKhongTron = ch.DsCauTraLoi.Where(d => !d.DaoViTri).ToList();
-
-                    dapAnDaTron = dapAnDuocTron.Concat(dapAnKhongTron).ToList();
-
-                    for (int viTriMoi = 0; viTriMoi < dapAnDaTron.Count; viTriMoi++)
-                    {
-                        dapAnDaTron[viTriMoi] = new CauTraLoi
-                        {
-                            NoiDung = dapAnDaTron[viTriMoi].NoiDung,
-                            LaDapAnDung = dapAnDaTron[viTriMoi].LaDapAnDung,
-                            DaoViTri = dapAnDaTron[viTriMoi].DaoViTri,
-                            ViTriGoc = (byte)viTriMoi,
-                            HinhAnh = dapAnDaTron[viTriMoi].HinhAnh
-                        };
-                    }
-                }
-                else
-                {
-                    dapAnDaTron = ch.DsCauTraLoi.Select(d => new CauTraLoi
-                    {
-                        NoiDung = d.NoiDung,
-                        LaDapAnDung = d.LaDapAnDung,
-                        DaoViTri = d.DaoViTri,
-                        ViTriGoc = d.ViTriGoc,
-                        HinhAnh = d.HinhAnh
-                    }).OrderBy(d => d.ViTriGoc).ToList();
-                }
-
-                // Lưu vào ChiTietDeThi
-                var chiTietDeThi = new ChiTietDeThi
-                {
-                    CauHoiId = ch.Id,
-                    DsDapAnTrongDe = dapAnDaTron.Select((d, index) => new ChiTietCauTraLoiTrongDeThi
-                    {
-                        NoiDung = d.NoiDung,
-                        LaDapAnDung = d.LaDapAnDung,
-                        ViTri = (byte)index,
-                        HinhAnh = d.HinhAnh
-                    }).ToList()
-                };
-
-                deThi.DsChiTietDeThi.Add(chiTietDeThi);
-                deThiExport.CauHoiVaDapAn.Add((ch, dapAnDaTron));
-            }
-
-            _dbContext.DeThi.Add(deThi);
-            danhSachDeVuaTao.Add(deThi);
-            danhSachDeThiExport.Add(deThiExport);
-        }
-
-        _dbContext.SaveChanges();
-        LoadDeThi();
-
-        for (int i = 0; i < danhSachDeVuaTao.Count; i++)
-        {
-            var exportData = danhSachDeThiExport[i];
-            var deThi = danhSachDeVuaTao[i];
-
-            var saveFileDialog = new Microsoft.Win32.SaveFileDialog
-            {
-                Title = $"Lưu đề thi: {exportData.DeThi.TieuDe}_{exportData.DeThi.MaDe}",
-                FileName = $"{exportData.DeThi.TieuDe}_{exportData.DeThi.MaDe}.docx",
-                Filter = "Word Document (*.docx)|*.docx"
-            };
-
-            if (saveFileDialog.ShowDialog() == true)
-            {
-                // 1. Lưu đề thi
-                ExportDeThiToWordService.Export(exportData, saveFileDialog.FileName, _baseImageFolder);
-
-                // 2. Lưu đáp án ra file riêng (ví dụ cùng thư mục)
-                var dapAnFilePath = Path.Combine(
-                    Path.GetDirectoryName(saveFileDialog.FileName)!,
-                    Path.GetFileNameWithoutExtension(saveFileDialog.FileName) + "_DapAn.docx");
-
-                // Load lại DsChiTietDeThi từ DB (nếu cần)
-                var deThiFull = _dbContext.DeThi
-                    .Include(d => d.DsChiTietDeThi)
-                    .ThenInclude(ct => ct.DsDapAnTrongDe)
-                    .First(d => d.Id == deThi.Id);
-
-                ExportDapAnService.Export(deThiFull, dapAnFilePath, _baseImageFolder);
-            }
+            // Chỉ cần load lại danh sách để hiện đề thi mới lên lưới
+            LoadDeThi();
+            MessageBox.Show("Tạo đề thi thành công!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
         }
     }
 
@@ -385,12 +217,13 @@ public partial class RaDeControl : UserControl, INotifyPropertyChanged
     {
         if ((sender as Button)?.Tag is not DeThi selectedDeThi) return;
 
-        // Load đầy đủ câu hỏi và đáp án
+        // 1. Load dữ liệu đầy đủ (Bao gồm cả câu hỏi cha - Parent)
         var deThiDayDu = _dbContext.DeThi
             .Include(x => x.MonHoc)
             .Include(x => x.LopHoc)
             .Include(d => d.DsChiTietDeThi)
                 .ThenInclude(ct => ct.CauHoi)
+                    .ThenInclude(ch => ch.Parent) // <--- QUAN TRỌNG: Lấy câu chùm/đoạn văn
             .Include(d => d.DsChiTietDeThi)
                 .ThenInclude(ct => ct.DsDapAnTrongDe)
             .FirstOrDefault(d => d.Id == selectedDeThi.Id);
@@ -401,29 +234,28 @@ public partial class RaDeControl : UserControl, INotifyPropertyChanged
             return;
         }
 
-        // Tạo dữ liệu cho xuất Word
-        var exportData = new DeThiExportData
-        {
-            DeThi = deThiDayDu
-        };
+        // 2. Chuẩn bị dữ liệu Export
+        var exportData = new DeThiExportData { DeThi = deThiDayDu };
 
         foreach (var chiTiet in deThiDayDu.DsChiTietDeThi.OrderBy(ct => ct.Id))
         {
             var ch = chiTiet.CauHoi;
-
+            // Map ngược lại từ ChiTietCauTraLoiTrongDeThi sang CauTraLoi để dùng chung Service
             var dapAnDaTron = chiTiet.DsDapAnTrongDe
                 .OrderBy(d => d.ViTri)
                 .Select(d => new CauTraLoi
                 {
                     NoiDung = d.NoiDung,
                     LaDapAnDung = d.LaDapAnDung,
-                    ViTriGoc = d.ViTri, // dùng ViTri của bản trộn
-                    DaoViTri = false // không quan trọng ở đây
+                    ViTriGoc = d.ViTri,
+                    HinhAnh = d.HinhAnh,
+                    DaoViTri = false
                 }).ToList();
 
             exportData.CauHoiVaDapAn.Add((ch, dapAnDaTron));
         }
 
+        // 3. Thực hiện lưu file
         var saveFileDialog = new Microsoft.Win32.SaveFileDialog
         {
             Title = $"Lưu đề thi: {exportData.DeThi.TieuDe}_{exportData.DeThi.MaDe}",
@@ -435,14 +267,16 @@ public partial class RaDeControl : UserControl, INotifyPropertyChanged
         {
             try
             {
+                // Gọi Service Export MỚI (đã cập nhật dùng HtmlToWordHelper)
                 ExportDeThiToWordService.Export(exportData, saveFileDialog.FileName, _baseImageFolder);
-                var dapAnPath = Path.Combine(
-                    Path.GetDirectoryName(saveFileDialog.FileName)!,
-                    Path.GetFileNameWithoutExtension(saveFileDialog.FileName) + "_DapAn.docx");
 
-                ExportDapAnService.Export(deThiDayDu, dapAnPath);
+                var dapAnPath = System.IO.Path.Combine(
+                    System.IO.Path.GetDirectoryName(saveFileDialog.FileName)!,
+                    System.IO.Path.GetFileNameWithoutExtension(saveFileDialog.FileName) + "_DapAn.docx");
 
-                MessageBox.Show("Xuất đề thi thành công!", "Thành công", MessageBoxButton.OK, MessageBoxImage.Information);
+                ExportDapAnService.Export(deThiDayDu, dapAnPath, _baseImageFolder);
+
+                MessageBox.Show("Xuất đề thi và đáp án thành công!", "Thành công", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
