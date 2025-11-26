@@ -158,6 +158,13 @@ public class QuestionExtractorService
                             currentGroup.Loai = LoaiCauHoi.TracNghiemNhieuDapAn;
                     }
 
+                    // Cập nhật Mức độ (Logic MỚI)
+                    if (currentGroup.CauHoiCon.Any())
+                    {
+                        var maxLevel = currentGroup.CauHoiCon.Max(c => (int)c.MucDo);
+                        currentGroup.MucDo = (MucDoCauHoi)maxLevel;
+                    }
+
                     result.Add(currentGroup);
                     currentGroup = null;
                 }
@@ -305,11 +312,37 @@ public class QuestionExtractorService
         using var transaction = _dbContext.Database.BeginTransaction();
         try
         {
+            // 1. Lấy tất cả câu hỏi (gốc) đang có trong chương này ra để đối chiếu
+            // Lưu ý: Chỉ lấy NoiDung để tối ưu hiệu suất
+            var dbQuestionsContent = _dbContext.CauHoi
+                .Where(x => x.ChuongId == chuongId && x.ParentId == null) // Chỉ check câu cha
+                .Select(x => x.NoiDung)
+                .ToList();
+
+            // 2. Tạo HashSet chứa các "dấu vân tay" của câu hỏi cũ
+            var existingSignatures = new HashSet<string>(
+                dbQuestionsContent.Select(c => GetComparisonKey(c))
+            );
+
             int count = 0;
             foreach (var q in questions)
             {
+                // Tạo dấu vân tay cho câu hỏi mới đang chuẩn bị lưu
+                string currentSignature = GetComparisonKey(q.NoiDung);
+
+                // 3. Kiểm tra trùng
+                if (existingSignatures.Contains(currentSignature))
+                {
+                    // Nếu trùng -> Bỏ qua (Không lưu câu này và các con của nó)
+                    // (Bạn có thể log lại hoặc thông báo nếu cần)
+                    continue;
+                }
+
+                // 4. Nếu chưa có -> Lưu và thêm vào HashSet (để tránh trùng lặp trong chính file import này)
+                existingSignatures.Add(currentSignature);
                 count += SaveQuestionRecursive(q, chuongId, null);
             }
+
             _dbContext.SaveChanges();
             transaction.Commit();
             return count;
@@ -359,4 +392,18 @@ public class QuestionExtractorService
         }
         return savedCount;
     }
+
+    // Hàm tạo khóa so sánh: Loại bỏ ID ảnh động và khoảng trắng thừa
+    private string GetComparisonKey(string? content)
+    {
+        if (string.IsNullOrWhiteSpace(content)) return string.Empty;
+
+        // 1. Thay thế tất cả placeholder {{IMG:guid...}} thành token cố định {{IMG}}
+        // Để khi so sánh, ta không quan tâm tên file ảnh là gì, chỉ quan tâm vị trí đó có ảnh
+        string normalized = Regex.Replace(content, @"\{\{IMG:[^}]+\}\}", "{{IMG}}");
+
+        // 2. Chuyển về chữ thường và Trim
+        return normalized.Trim().ToLowerInvariant();
+    }
 }
+

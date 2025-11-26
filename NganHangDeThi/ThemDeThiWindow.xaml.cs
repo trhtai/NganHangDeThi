@@ -110,18 +110,51 @@ public partial class ThemDeThiWindow : Window, INotifyPropertyChanged
         var rand = new Random();
         var cauHoiDuocChon = new List<CauHoi>();
 
-        // Bốc câu hỏi theo ma trận
+        // Bốc câu hỏi theo ma trận (LOGIC MỚI)
         foreach (var ct in chiTietMaTrans)
         {
+            // 1. Lấy tất cả ứng viên phù hợp (chưa filter số lượng)
+            // Lưu ý: Lấy cả câu cha (để check chùm)
             var candidates = cauHoiTheoDieuKien
                 .Where(c => c.MucDo == ct.MucDoCauHoi &&
                             c.Loai == ct.LoaiCauHoi &&
                             c.ChuongId == ct.ChuongId)
-                .OrderBy(x => rand.Next())
-                .Take(ct.SoCau)
+                .OrderBy(x => rand.Next()) // Trộn ngẫu nhiên ngay từ đầu
                 .ToList();
 
-            cauHoiDuocChon.AddRange(candidates);
+            int currentCount = 0; // Đếm số câu con đã chọn được
+            int targetCount = ct.SoCau; // Mục tiêu của ma trận
+
+            foreach (var candidate in candidates)
+            {
+                if (currentCount >= targetCount) break; // Đã đủ chỉ tiêu
+
+                // Tính trọng số: Nếu là câu chùm thì đếm số con, câu đơn thì là 1
+                int weight = (candidate.DsCauHoiCon != null && candidate.DsCauHoiCon.Any())
+                             ? candidate.DsCauHoiCon.Count
+                             : 1;
+
+                // Kiểm tra: Nếu chọn câu này vào thì có bị LỐ số lượng không?
+                // (Logic chặt: Không được vượt quá. Logic lỏng: Cho phép vượt quá 1-2 câu nếu cần)
+                // Ở đây tôi chọn logic CHẶT: Chỉ lấy nếu vừa đủ hoặc thiếu.
+                if (currentCount + weight <= targetCount)
+                {
+                    cauHoiDuocChon.Add(candidate);
+                    currentCount += weight;
+                }
+                else
+                {
+                    // Nếu câu chùm quá to (vd cần thêm 1 câu mà gặp chùm 5 câu) -> Bỏ qua, tìm câu đơn khác
+                    continue;
+                }
+            }
+
+            // Cảnh báo nếu không tìm đủ câu (Optional)
+            if (currentCount < targetCount)
+            {
+                // Có thể log lại hoặc thông báo: "Chương ... thiếu câu hỏi để sinh đủ số lượng"
+                // Nhưng để đơn giản, ta cứ tiếp tục, chấp nhận đề thiếu câu.
+            }
         }
 
         // Đánh dấu đã ra đề
