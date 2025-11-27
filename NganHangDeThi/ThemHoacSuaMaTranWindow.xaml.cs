@@ -75,12 +75,22 @@ public partial class ThemHoacSuaMaTranWindow : Window, INotifyPropertyChanged
         CapNhatThongTinBoLoc();
     }
 
+    // Helper function để kiểm tra xem loại câu hỏi có phải là dạng Chùm/Điền khuyết không
+    // Bạn có thể đặt hàm này trong class hoặc dùng trực tiếp biểu thức logic
+    private bool IsClusterType(LoaiCauHoi loai)
+    {
+        return loai == LoaiCauHoi.DienKhuyet ||
+               loai == LoaiCauHoi.ChumTracNghiemMotDapAn ||
+               loai == LoaiCauHoi.ChumTracNghiemNhieuDapAn ||
+               loai == LoaiCauHoi.ChumTuLuan;
+    }
+
+    // Hàm cập nhật thông tin bộ lọc (Hiển thị số lượng)
     private void CapNhatThongTinBoLoc()
     {
-        // 1. Chỉ truy vấn các câu hỏi GỐC (Câu cha / Parent)
+        // 1. Chỉ truy vấn các câu hỏi GỐC (Câu cha)
         IQueryable<CauHoi> query = _db.CauHoi.Where(q => q.ParentId == null);
 
-        // 2. Áp dụng các bộ lọc
         if (CbbChuong.SelectedItem is Chuong chuong)
             query = query.Where(q => q.ChuongId == chuong.Id);
         else if (CbbMonHoc.SelectedItem is MonHoc mon)
@@ -91,13 +101,14 @@ public partial class ThemHoacSuaMaTranWindow : Window, INotifyPropertyChanged
 
         var selectedLoai = CbbLoai.SelectedValue as LoaiCauHoi?;
         if (selectedLoai.HasValue)
+        {
             query = query.Where(q => q.Loai == selectedLoai.Value);
+        }
 
-        // 3. Xác định chế độ hiển thị dựa trên Loại câu hỏi được chọn
-        bool cheDoHienThiChiTiet = selectedLoai.HasValue &&
-                                   (selectedLoai == LoaiCauHoi.DienKhuyet || selectedLoai == LoaiCauHoi.CauChum);
+        // Kiểm tra nếu là loại cần đếm Items (Điền khuyết hoặc Chùm)
+        // Logic kiểm tra mới
+        bool isCluster = selectedLoai.HasValue && IsClusterType(selectedLoai.Value);
 
-        // Đếm tổng số bản ghi (Câu đơn + Bài chùm đều tính là 1)
         int tongSoBanGhi = query.Count();
 
         if (tongSoBanGhi == 0)
@@ -108,24 +119,22 @@ public partial class ThemHoacSuaMaTranWindow : Window, INotifyPropertyChanged
             return;
         }
 
-        if (cheDoHienThiChiTiet)
+        if (isCluster)
         {
-            // Dạng chùm/điền khuyết: Cần đếm thêm số lượng câu con để User biết nhập
             int tongSoCauCon = query.SelectMany(q => q.DsCauHoiCon).Count();
-
             TxtThongTinBoLoc.Text = $"Tìm thấy: {tongSoBanGhi} bài (chứa tổng {tongSoCauCon} câu hỏi nhỏ).";
             TxtThongTinBoLoc.Foreground = System.Windows.Media.Brushes.Blue;
             TxtThongTinBoLoc.ToolTip = "Hãy nhập tổng số câu hỏi nhỏ (Items) vào ô 'Số câu'.";
         }
         else
         {
-            // Dạng đơn hoặc Tất cả: Chỉ cần hiển thị tổng số lượng bản ghi
             TxtThongTinBoLoc.Text = $"Tổng số câu hỏi khả dụng: {tongSoBanGhi} câu.";
             TxtThongTinBoLoc.Foreground = System.Windows.Media.Brushes.DarkSlateGray;
             TxtThongTinBoLoc.ToolTip = null;
         }
     }
 
+    // Hàm thêm chi tiết (Validate số lượng khi Lưu)
     private void BtnThemChiTiet_Click(object sender, RoutedEventArgs e)
     {
         if (CbbChuong.SelectedItem is not Chuong chuong) return;
@@ -148,38 +157,20 @@ public partial class ThemHoacSuaMaTranWindow : Window, INotifyPropertyChanged
             return;
         }
 
-        // --- BẮT ĐẦU SỬA ĐỔI ---
         int tongSoCauHoi;
+        var query = _db.CauHoi.Where(q => q.ChuongId == chuong.Id && q.MucDo == mucDo && q.ParentId == null);
 
-        // Nếu là Điền khuyết hoặc Câu chùm -> Đếm tổng số câu con
-        if (loai == LoaiCauHoi.DienKhuyet || loai == LoaiCauHoi.CauChum)
+        // Logic đếm số lượng Items
+        if (IsClusterType(loai))
         {
-            // Lấy danh sách các câu cha phù hợp
-            var queryParents = _db.CauHoi.Where(q =>
-                q.ChuongId == chuong.Id &&
-                q.MucDo == mucDo &&
-                q.Loai == loai &&
-                q.ParentId == null); // Chỉ lấy câu cha
-
-            // Tính tổng số lượng con (Sum)
-            // Lưu ý: Có thể cần Include(x => x.DsCauHoiCon) nếu EF không tự load, 
-            // nhưng query trực tiếp như sau thường ổn với EF Core:
-            tongSoCauHoi = queryParents.SelectMany(p => p.DsCauHoiCon).Count();
+            query = query.Where(q => q.Loai == loai);
+            tongSoCauHoi = query.SelectMany(p => p.DsCauHoiCon).Count();
         }
         else
         {
-            // Logic cũ cho câu đơn: Trắc nghiệm, Tự luận...
-            // Lưu ý: Phải loại trừ các câu là CON của câu chùm (để tránh đếm trùng nếu câu con cũng có loại này)
-            // Hoặc đơn giản nhất theo logic hiện tại là đếm tất cả câu có loại này
-            // Tuy nhiên, các câu con trong bài điền khuyết được lưu là TracNghiemMotDapAn.
-            // Nếu bạn chọn TracNghiemMotDapAn ở đây, nó sẽ đếm cả câu lẻ và câu con trong bài điền khuyết.
-            // Để an toàn và khớp với logic sinh đề (sinh đề lấy cả con), ta giữ nguyên logic đếm count thông thường.
-            tongSoCauHoi = _db.CauHoi.Count(q =>
-                q.ChuongId == chuong.Id &&
-                q.MucDo == mucDo &&
-                q.Loai == loai);
+            query = query.Where(q => q.Loai == loai);
+            tongSoCauHoi = query.Count();
         }
-        // --- KẾT THÚC SỬA ĐỔI ---
 
         if (soCau > tongSoCauHoi)
         {
@@ -187,7 +178,6 @@ public partial class ThemHoacSuaMaTranWindow : Window, INotifyPropertyChanged
             return;
         }
 
-        // ... (Phần code thêm vào DsChiTietMaTran giữ nguyên)
         DsChiTietMaTran.Add(new ChiTietMaTran
         {
             ChuongId = chuong.Id,

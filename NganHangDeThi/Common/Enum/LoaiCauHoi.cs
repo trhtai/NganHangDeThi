@@ -19,6 +19,12 @@ public enum LoaiCauHoi
     [Description("Điền khuyết")]
     DienKhuyet = 5,
 
-    [Description("Câu chùm")]
-    CauChum = 6
+    [Description("Chùm - TN 1 đáp án")]
+    ChumTracNghiemMotDapAn = 6,
+
+    [Description("Chùm - Tự luận")]
+    ChumTuLuan = 7,
+
+    [Description("Chùm - TN nhiều đáp án")]
+    ChumTracNghiemNhieuDapAn = 8
 }

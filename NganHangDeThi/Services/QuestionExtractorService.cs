@@ -71,8 +71,9 @@ public class QuestionExtractorService
                 SaveCurrentQuestion(result, currentGroup, currentQuestion);
                 currentQuestion = null;
 
-                // Check ngay dòng đầu tiên
+                // Check ngay dòng đầu tiên xem có phải điền khuyết không
                 bool isClozeTest = rawText.Contains("___") || htmlContent.Contains("___");
+                // Lưu ý: Nếu chưa xác định được loại chùm cụ thể, ta tạm để TracNghiemMotDapAn (sẽ được Validate lại sau)
                 LoaiCauHoi groupType = isClozeTest ? LoaiCauHoi.DienKhuyet : LoaiCauHoi.TracNghiemMotDapAn;
 
                 currentGroup = new CauHoiRaw
@@ -128,14 +129,10 @@ public class QuestionExtractorService
                 else if (currentGroup != null)
                 {
                     currentGroup.NoiDung += "<br/>" + htmlContent;
-
-                    // --- FIX QUAN TRỌNG: Check tiếp diễn cho Điền Khuyết ---
-                    // Nếu dòng nối tiếp này có chứa "___" -> Cập nhật nhóm thành Điền Khuyết ngay lập tức
                     if (currentGroup.Loai != LoaiCauHoi.DienKhuyet && (rawText.Contains("___") || htmlContent.Contains("___")))
                     {
                         currentGroup.Loai = LoaiCauHoi.DienKhuyet;
                     }
-                    // -------------------------------------------------------
                 }
             }
 
@@ -148,17 +145,10 @@ public class QuestionExtractorService
 
                 if (currentGroup != null)
                 {
-                    // Logic cập nhật ngược (chỉ chạy nếu KHÔNG PHẢI là Điền khuyết)
-                    // Vì nếu đã là Điền khuyết (do có ___) thì ưu tiên giữ nguyên là Điền khuyết
-                    if (currentGroup.Loai != LoaiCauHoi.DienKhuyet && currentGroup.CauHoiCon.Any())
-                    {
-                        if (currentGroup.CauHoiCon.Any(c => c.Loai == LoaiCauHoi.TuLuan))
-                            currentGroup.Loai = LoaiCauHoi.TuLuan;
-                        else if (currentGroup.CauHoiCon.Any(c => c.Loai == LoaiCauHoi.TracNghiemNhieuDapAn))
-                            currentGroup.Loai = LoaiCauHoi.TracNghiemNhieuDapAn;
-                    }
+                    // --- VALIDATE VÀ GÁN LOẠI CHÙM ---
+                    ValidateAndSetClusterType(currentGroup);
+                    // ---------------------------------
 
-                    // Cập nhật Mức độ (Logic MỚI)
                     if (currentGroup.CauHoiCon.Any())
                     {
                         var maxLevel = currentGroup.CauHoiCon.Max(c => (int)c.MucDo);
@@ -174,17 +164,56 @@ public class QuestionExtractorService
         SaveCurrentQuestion(result, currentGroup, currentQuestion);
         if (currentGroup != null)
         {
-            if (currentGroup.Loai != LoaiCauHoi.DienKhuyet && currentGroup.CauHoiCon.Any())
+            ValidateAndSetClusterType(currentGroup);
+            if (currentGroup.CauHoiCon.Any())
             {
-                if (currentGroup.CauHoiCon.Any(c => c.Loai == LoaiCauHoi.TuLuan))
-                    currentGroup.Loai = LoaiCauHoi.TuLuan;
-                else if (currentGroup.CauHoiCon.Any(c => c.Loai == LoaiCauHoi.TracNghiemNhieuDapAn))
-                    currentGroup.Loai = LoaiCauHoi.TracNghiemNhieuDapAn;
+                var maxLevel = currentGroup.CauHoiCon.Max(c => (int)c.MucDo);
+                currentGroup.MucDo = (MucDoCauHoi)maxLevel;
             }
             result.Add(currentGroup);
         }
 
         return result;
+    }
+
+    // --- HÀM QUAN TRỌNG: Kiểm tra câu con và gán loại câu cha ---
+    private void ValidateAndSetClusterType(CauHoiRaw group)
+    {
+        if (!group.CauHoiCon.Any()) return;
+
+        // 1. Nếu là Điền Khuyết -> Giữ nguyên
+        if (group.Loai == LoaiCauHoi.DienKhuyet) return;
+
+        // 2. Kiểm tra tính đồng nhất
+        var firstType = group.CauHoiCon.First().Loai;
+        bool isMixed = group.CauHoiCon.Any(c => c.Loai != firstType);
+
+        if (isMixed)
+        {
+            string preview = group.NoiDung.Length > 50 ? group.NoiDung.Substring(0, 47) + "..." : group.NoiDung;
+            throw new InvalidDataException(
+                $"Lỗi định dạng tại câu chùm: \"{preview}\"\n" +
+                "Nguyên nhân: Câu chùm chứa các câu hỏi con KHÔNG CÙNG LOẠI.\n" +
+                "Vui lòng tách riêng chúng ra các nhóm <G> khác nhau.");
+        }
+
+        // 3. Gán loại cho câu Cha (Mapping 1-1 với câu con)
+        switch (firstType)
+        {
+            case LoaiCauHoi.TracNghiemMotDapAn:
+                group.Loai = LoaiCauHoi.ChumTracNghiemMotDapAn;
+                break;
+            case LoaiCauHoi.TracNghiemNhieuDapAn:
+                group.Loai = LoaiCauHoi.ChumTracNghiemNhieuDapAn;
+                break;
+            case LoaiCauHoi.TuLuan:
+                group.Loai = LoaiCauHoi.ChumTuLuan;
+                break;
+            default:
+                // Trường hợp fallback (ít xảy ra)
+                group.Loai = LoaiCauHoi.ChumTracNghiemMotDapAn;
+                break;
+        }
     }
 
     private void SaveCurrentQuestion(List<CauHoiRaw> result, CauHoiRaw? group, CauHoiRaw? question)
@@ -195,7 +224,7 @@ public class QuestionExtractorService
         int correctCount = question.DapAn.Count(x => x.LaDapAnDung);
 
         // Phân loại câu hỏi con
-        if (totalDapAn == 1) question.Loai = LoaiCauHoi.TuLuan;
+        if (totalDapAn == 1) question.Loai = LoaiCauHoi.TuLuan; // Tự luận đơn
         else if (correctCount > 1) question.Loai = LoaiCauHoi.TracNghiemNhieuDapAn;
         else question.Loai = LoaiCauHoi.TracNghiemMotDapAn;
 
@@ -205,7 +234,8 @@ public class QuestionExtractorService
             result.Add(question);
     }
 
-    // --- Helper functions (ParseMucDo, CleanTags, ConvertToHtml, ExtractImage...) giữ nguyên ---
+    // ... (Các hàm phụ trợ ParseMucDo, CleanTags, ConvertToHtml, ExtractImage, SaveToDatabase giữ nguyên) ...
+
     private MucDoCauHoi ParseMucDo(string tag)
     {
         tag = tag.ToUpper();
@@ -246,6 +276,7 @@ public class QuestionExtractorService
                     if (props.Color != null && (props.Color.Val == "FF0000" || props.Color.Val == "red")) return "color: red";
                     continue;
                 }
+                // (Phần xử lý Bold/Italic cũ giữ nguyên, vì HtmlToWordHelper mới là nơi quan trọng hơn)
                 if (props.Bold != null) text = $"<b>{text}</b>";
                 if (props.Italic != null) text = $"<i>{text}</i>";
                 if (props.Underline != null) text = $"<u>{text}</u>";
@@ -312,14 +343,11 @@ public class QuestionExtractorService
         using var transaction = _dbContext.Database.BeginTransaction();
         try
         {
-            // 1. Lấy tất cả câu hỏi (gốc) đang có trong chương này ra để đối chiếu
-            // Lưu ý: Chỉ lấy NoiDung để tối ưu hiệu suất
             var dbQuestionsContent = _dbContext.CauHoi
-                .Where(x => x.ChuongId == chuongId && x.ParentId == null) // Chỉ check câu cha
+                .Where(x => x.ChuongId == chuongId && x.ParentId == null)
                 .Select(x => x.NoiDung)
                 .ToList();
 
-            // 2. Tạo HashSet chứa các "dấu vân tay" của câu hỏi cũ
             var existingSignatures = new HashSet<string>(
                 dbQuestionsContent.Select(c => GetComparisonKey(c))
             );
@@ -327,18 +355,9 @@ public class QuestionExtractorService
             int count = 0;
             foreach (var q in questions)
             {
-                // Tạo dấu vân tay cho câu hỏi mới đang chuẩn bị lưu
                 string currentSignature = GetComparisonKey(q.NoiDung);
+                if (existingSignatures.Contains(currentSignature)) continue;
 
-                // 3. Kiểm tra trùng
-                if (existingSignatures.Contains(currentSignature))
-                {
-                    // Nếu trùng -> Bỏ qua (Không lưu câu này và các con của nó)
-                    // (Bạn có thể log lại hoặc thông báo nếu cần)
-                    continue;
-                }
-
-                // 4. Nếu chưa có -> Lưu và thêm vào HashSet (để tránh trùng lặp trong chính file import này)
                 existingSignatures.Add(currentSignature);
                 count += SaveQuestionRecursive(q, chuongId, null);
             }
@@ -393,17 +412,10 @@ public class QuestionExtractorService
         return savedCount;
     }
 
-    // Hàm tạo khóa so sánh: Loại bỏ ID ảnh động và khoảng trắng thừa
     private string GetComparisonKey(string? content)
     {
         if (string.IsNullOrWhiteSpace(content)) return string.Empty;
-
-        // 1. Thay thế tất cả placeholder {{IMG:guid...}} thành token cố định {{IMG}}
-        // Để khi so sánh, ta không quan tâm tên file ảnh là gì, chỉ quan tâm vị trí đó có ảnh
         string normalized = Regex.Replace(content, @"\{\{IMG:[^}]+\}\}", "{{IMG}}");
-
-        // 2. Chuyển về chữ thường và Trim
         return normalized.Trim().ToLowerInvariant();
     }
 }
-
