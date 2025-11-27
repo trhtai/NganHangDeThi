@@ -169,10 +169,38 @@ public partial class ThemHoacSuaMaTranWindow : Window, INotifyPropertyChanged
             return;
         }
 
-        int tongSoCauHoi = _db.CauHoi.Count(q =>
-            q.ChuongId == chuong.Id &&
-            q.MucDo == mucDo &&
-            q.Loai == loai);
+        // --- BẮT ĐẦU SỬA ĐỔI ---
+        int tongSoCauHoi;
+
+        // Nếu là Điền khuyết hoặc Câu chùm -> Đếm tổng số câu con
+        if (loai == LoaiCauHoi.DienKhuyet || loai == LoaiCauHoi.CauChum)
+        {
+            // Lấy danh sách các câu cha phù hợp
+            var queryParents = _db.CauHoi.Where(q =>
+                q.ChuongId == chuong.Id &&
+                q.MucDo == mucDo &&
+                q.Loai == loai &&
+                q.ParentId == null); // Chỉ lấy câu cha
+
+            // Tính tổng số lượng con (Sum)
+            // Lưu ý: Có thể cần Include(x => x.DsCauHoiCon) nếu EF không tự load, 
+            // nhưng query trực tiếp như sau thường ổn với EF Core:
+            tongSoCauHoi = queryParents.SelectMany(p => p.DsCauHoiCon).Count();
+        }
+        else
+        {
+            // Logic cũ cho câu đơn: Trắc nghiệm, Tự luận...
+            // Lưu ý: Phải loại trừ các câu là CON của câu chùm (để tránh đếm trùng nếu câu con cũng có loại này)
+            // Hoặc đơn giản nhất theo logic hiện tại là đếm tất cả câu có loại này
+            // Tuy nhiên, các câu con trong bài điền khuyết được lưu là TracNghiemMotDapAn.
+            // Nếu bạn chọn TracNghiemMotDapAn ở đây, nó sẽ đếm cả câu lẻ và câu con trong bài điền khuyết.
+            // Để an toàn và khớp với logic sinh đề (sinh đề lấy cả con), ta giữ nguyên logic đếm count thông thường.
+            tongSoCauHoi = _db.CauHoi.Count(q =>
+                q.ChuongId == chuong.Id &&
+                q.MucDo == mucDo &&
+                q.Loai == loai);
+        }
+        // --- KẾT THÚC SỬA ĐỔI ---
 
         if (soCau > tongSoCauHoi)
         {
@@ -180,6 +208,7 @@ public partial class ThemHoacSuaMaTranWindow : Window, INotifyPropertyChanged
             return;
         }
 
+        // ... (Phần code thêm vào DsChiTietMaTran giữ nguyên)
         DsChiTietMaTran.Add(new ChiTietMaTran
         {
             ChuongId = chuong.Id,

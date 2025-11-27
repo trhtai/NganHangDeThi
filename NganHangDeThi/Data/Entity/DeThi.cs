@@ -11,6 +11,7 @@ public class DeThi : IEntity<int>
     public int ThoiGianLamBai { get; set; }
     public string GhiChu { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public bool DaThi { get; set; } = false;
 
     public int MonHocId { get; set; }
     public MonHoc? MonHoc { get; set; }

@@ -5,6 +5,7 @@ using NganHangDeThi.Data.Entity;
 using NganHangDeThi.Helpers;
 using NganHangDeThi.Models;
 using System.IO;
+using System.Text.RegularExpressions;
 
 namespace NganHangDeThi.Services;
 
@@ -57,24 +58,42 @@ public static class ExportDeThiToWordService
         OpenXmlElement insertAfter = placeholderPara;
         int stt = 1;
 
-        // QUAN TRỌNG: Gom nhóm theo ParentId
-        // Nếu ParentId null thì gom theo chính Id của nó (để nó đứng 1 mình)
+        // Gom nhóm theo ParentId
         var groups = dataList.GroupBy(x => x.CauHoi.ParentId ?? x.CauHoi.Id).ToList();
 
         foreach (var group in groups)
         {
-            // Kiểm tra xem nhóm này có phải là Câu chùm/Điền khuyết không?
-            // Lấy đại diện 1 item để check Parent
             var firstItem = group.First().CauHoi;
 
-            // Nếu có Parent -> In nội dung Parent (Giả thuyết chung/Đoạn văn) trước
+            // Nếu có Parent -> In nội dung Parent (Giả thuyết chung/Đoạn văn)
             if (firstItem.Parent != null)
             {
                 var pParent = new Paragraph();
-                // Có thể thêm chữ "Đọc đoạn văn sau..." nếu muốn
-                var contentParent = HtmlToWordHelper.ConvertHtmlToElements(mainPart, firstItem.Parent.NoiDung, imageBasePath);
+                string parentContent = firstItem.Parent.NoiDung;
 
-                // Xử lý ảnh của câu Parent (nếu có)
+                // --- LOGIC MỚI: Tự động đánh số vào chỗ trống ---
+                // Kiểm tra nếu đoạn văn có chứa dấu gạch dưới (đại diện cho chỗ trống)
+                if (parentContent.Contains("___"))
+                {
+                    // Regex tìm các chuỗi gạch dưới liên tiếp (ví dụ: ___, ____, _____)
+                    var regexBlank = new Regex(@"_{3,}");
+
+                    int tempStt = stt; // Biến tạm để đếm số thứ tự mà không ảnh hưởng biến chính
+
+                    // Thay thế mỗi dấu gạch dưới tìm thấy bằng số thứ tự tương ứng
+                    // Ví dụ: "____" -> " (1) ____ "
+                    parentContent = regexBlank.Replace(parentContent, match =>
+                    {
+                        string replacement = $" ({tempStt}) _______ ";
+                        tempStt++;
+                        return replacement;
+                    });
+                }
+                // ------------------------------------------------
+
+                var contentParent = HtmlToWordHelper.ConvertHtmlToElements(mainPart, parentContent, imageBasePath);
+
+                // Xử lý ảnh của câu Parent
                 if (!string.IsNullOrWhiteSpace(firstItem.Parent.HinhAnh))
                 {
                     var drawing = HtmlToWordHelper.CreateImageDrawing(mainPart, Path.Combine(imageBasePath, firstItem.Parent.HinhAnh));
@@ -85,7 +104,7 @@ public static class ExportDeThiToWordService
                 insertAfter = body.InsertAfter(pParent, insertAfter);
             }
 
-            // In danh sách các câu hỏi con (hoặc câu đơn)
+            // In danh sách các câu hỏi con
             foreach (var item in group)
             {
                 var cauHoi = item.CauHoi;
@@ -98,10 +117,8 @@ public static class ExportDeThiToWordService
                     new Text($"Câu {stt++}: ") { Space = SpaceProcessingModeValues.Preserve }
                 ));
 
-                // Nội dung câu hỏi (từ HTML)
                 pCauHoi.Append(HtmlToWordHelper.ConvertHtmlToElements(mainPart, cauHoi.NoiDung, imageBasePath));
 
-                // Ảnh câu hỏi (nếu có)
                 if (!string.IsNullOrWhiteSpace(cauHoi.HinhAnh))
                 {
                     var drawing = HtmlToWordHelper.CreateImageDrawing(mainPart, Path.Combine(imageBasePath, cauHoi.HinhAnh));
@@ -112,19 +129,21 @@ public static class ExportDeThiToWordService
 
                 // 2. In các đáp án
                 char ma = 'A';
-                foreach (var d in dapAns.OrderBy(x => x.ViTriGoc)) // Sắp xếp theo vị trí đã trộn
+
+                // Nếu là trắc nghiệm điền khuyết hoặc câu đơn bình thường -> In dọc hoặc ngang tùy ý
+                // Ở đây giữ logic cũ: Mỗi đáp án 1 dòng (dạng liệt kê)
+                // Bạn có thể cải tiến để in 4 đáp án trên 1 dòng nếu nội dung ngắn (dùng Table hoặc Tab)
+                foreach (var d in dapAns.OrderBy(x => x.ViTriGoc))
                 {
-                    var pDapAn = new Paragraph(new ParagraphProperties(new Indentation { Left = "720" })); // Thụt lề
+                    var pDapAn = new Paragraph(new ParagraphProperties(new Indentation { Left = "720" }));
 
                     pDapAn.Append(new Run(
                         new RunProperties(new RunFonts { Ascii = "Times New Roman" }, new FontSize { Val = "24" }, new Bold()),
                         new Text($"{ma++}. ")
                     ));
 
-                    // Nội dung đáp án (từ HTML)
                     pDapAn.Append(HtmlToWordHelper.ConvertHtmlToElements(mainPart, d.NoiDung, imageBasePath, true));
 
-                    // Ảnh đáp án (nếu có)
                     if (!string.IsNullOrWhiteSpace(d.HinhAnh))
                     {
                         var drawing = HtmlToWordHelper.CreateImageDrawing(mainPart, Path.Combine(imageBasePath, d.HinhAnh));
@@ -134,7 +153,6 @@ public static class ExportDeThiToWordService
                     insertAfter = body.InsertAfter(pDapAn, insertAfter);
                 }
 
-                // Dòng trống ngăn cách
                 insertAfter = body.InsertAfter(new Paragraph(new Run(new Text(""))), insertAfter);
             }
         }

@@ -49,10 +49,8 @@ public static class HtmlToWordHelper
                 else if (lowerTag.Contains("<sup>")) isSup = true;
                 else if (lowerTag.Contains("</sup>")) isSup = false;
 
-                // FIX: Logic xử lý màu
                 else if (lowerTag.Contains("color:red") || lowerTag.Contains("color: red"))
                 {
-                    // Chỉ bật cờ đỏ nếu KHÔNG yêu cầu bỏ màu
                     if (!ignoreColor) isRed = true;
                 }
                 else if (lowerTag.Contains("</span>")) isRed = false;
@@ -64,7 +62,6 @@ public static class HtmlToWordHelper
             }
             else if (match.Groups[2].Success) // Placeholder ảnh
             {
-                // ... (Giữ nguyên logic ảnh)
                 string fileName = token.Replace("{{IMG:", "").Replace("}}", "");
                 var drawing = CreateImageDrawing(mainPart, Path.Combine(imageBasePath, fileName));
                 if (drawing != null) elements.Add(new Run(drawing));
@@ -73,17 +70,21 @@ public static class HtmlToWordHelper
             {
                 var run = new Run(new Text(token) { Space = SpaceProcessingModeValues.Preserve });
                 var props = new RunProperties();
-                bool hasProps = false;
+                bool hasProps = false; // Biến này thực ra không cần thiết nữa vì ta luôn set font/size, nhưng giữ lại cho logic cũ
 
-                if (isBold) { props.Bold = new Bold(); hasProps = true; }
-                if (isItalic) { props.Italic = new Italic(); hasProps = true; }
-                if (isUnderline) { props.Underline = new Underline { Val = UnderlineValues.Single }; hasProps = true; }
+                // --- SỬA ĐỔI QUAN TRỌNG TẠI ĐÂY ---
+                // Thay vì chỉ set khi True, ta set luôn giá trị Val = isBold.
+                // Nếu isBold = false -> Nó sẽ sinh ra thẻ <w:b val="0"/> (Tắt in đậm).
+                // Điều này giúp ngắt sự kế thừa in đậm từ "Câu 1:"
+                props.Bold = new Bold { Val = isBold };
 
-                // Chỉ áp dụng màu nếu isRed đang true
-                if (isRed) { props.Color = new Color { Val = "FF0000" }; hasProps = true; }
+                if (isItalic) { props.Italic = new Italic(); }
+                if (isUnderline) { props.Underline = new Underline { Val = UnderlineValues.Single }; }
 
-                if (isSub) { props.VerticalTextAlignment = new VerticalTextAlignment { Val = VerticalPositionValues.Subscript }; hasProps = true; }
-                if (isSup) { props.VerticalTextAlignment = new VerticalTextAlignment { Val = VerticalPositionValues.Superscript }; hasProps = true; }
+                if (isRed) { props.Color = new Color { Val = "FF0000" }; }
+
+                if (isSub) { props.VerticalTextAlignment = new VerticalTextAlignment { Val = VerticalPositionValues.Subscript }; }
+                if (isSup) { props.VerticalTextAlignment = new VerticalTextAlignment { Val = VerticalPositionValues.Superscript }; }
 
                 props.RunFonts = new RunFonts { Ascii = "Times New Roman", HighAnsi = "Times New Roman" };
                 props.FontSize = new FontSize { Val = "24" };
@@ -96,7 +97,7 @@ public static class HtmlToWordHelper
         return elements;
     }
 
-
+    // ... (Hàm CreateImageDrawing và GetImagePartType giữ nguyên) ...
     public static Drawing? CreateImageDrawing(MainDocumentPart mainPart, string imagePath)
     {
         if (!File.Exists(imagePath)) return null;
@@ -108,7 +109,6 @@ public static class HtmlToWordHelper
         imagePart.FeedData(stream);
         var imagePartId = mainPart.GetIdOfPart(imagePart);
 
-        // Kích thước ảnh (giữ nguyên logic cũ của bạn)
         long cx = 990000L * 2;
         long cy = 792000L * 2;
 

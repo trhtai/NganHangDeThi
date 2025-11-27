@@ -137,17 +137,66 @@ public partial class RaDeControl : UserControl, INotifyPropertyChanged
         }
     }
 
+    // File: NganHangDeThi/MyUserControl/RaDeControl.xaml.cs
+
     private void BtnXoaMaTran_Click(object sender, System.Windows.RoutedEventArgs e)
     {
         var button = sender as Button;
         if (button?.Tag is MaTran selected)
         {
-            var result = MessageBox.Show("Bạn có chắc chắn muốn xóa ma trận này không?", "Xác nhận", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+            // 1. Kiểm tra logic nghiệp vụ: Có đề thi nào ĐÃ THI chưa?
+            bool coDeThiDaThi = _dbContext.DeThi.Any(d => d.MaTranId == selected.Id && d.DaThi);
+
+            if (coDeThiDaThi)
+            {
+                // Nếu đã có đề thi thật -> TUYỆT ĐỐI KHÔNG XÓA
+                MessageBox.Show(
+                    $"Không thể xóa ma trận \"{selected.Name}\".\n\n" +
+                    "Lý do: Ma trận này đã được sử dụng cho các kỳ thi chính thức (có đề thi đã được tổ chức).\n" +
+                    "Dữ liệu cần được lưu trữ để tra cứu lịch sử.",
+                    "Không thể xóa",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Stop);
+                return;
+            }
+
+            // 2. Nếu chưa có đề thi nào (hoặc chỉ toàn đề nháp chưa thi) -> Cho phép xóa sạch
+            // Tìm các đề thi "nháp" đang liên kết để xóa dọn đường
+            var dsDeThiNhap = _dbContext.DeThi.Where(d => d.MaTranId == selected.Id).ToList();
+
+            string thongBao = $"Bạn có chắc chắn muốn xóa ma trận \"{selected.Name}\" không?";
+            if (dsDeThiNhap.Count > 0)
+            {
+                thongBao += $"\n\n⚠️ CHÚ Ý: Hệ thống sẽ xóa kèm {dsDeThiNhap.Count} đề thi NHÁP (chưa thi) được tạo từ ma trận này.";
+            }
+
+            var result = MessageBox.Show(thongBao, "Xác nhận xóa", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+
             if (result == MessageBoxResult.Yes)
             {
-                _dbContext.MaTran.Remove(selected);
-                _dbContext.SaveChanges();
-                LoadMaTran();
+                using var transaction = _dbContext.Database.BeginTransaction();
+                try
+                {
+                    // Xóa các đề thi nháp trước (để gỡ khóa ngoại)
+                    if (dsDeThiNhap.Any())
+                    {
+                        _dbContext.DeThi.RemoveRange(dsDeThiNhap);
+                    }
+
+                    // Sau đó xóa Ma trận
+                    _dbContext.MaTran.Remove(selected);
+
+                    _dbContext.SaveChanges();
+                    transaction.Commit();
+
+                    LoadMaTran(); // Tải lại danh sách
+                    MessageBox.Show("Đã xóa thành công.", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                catch (Exception ex)
+                {
+                    transaction.Rollback();
+                    MessageBox.Show("Lỗi khi xóa: " + ex.Message, "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
             }
         }
     }
@@ -276,6 +325,14 @@ public partial class RaDeControl : UserControl, INotifyPropertyChanged
 
                 ExportDapAnService.Export(deThiDayDu, dapAnPath, _baseImageFolder);
 
+                // --- BỔ SUNG MỚI: Đánh dấu đề này ĐÃ THI ---
+                if (!selectedDeThi.DaThi)
+                {
+                    selectedDeThi.DaThi = true; // Đánh dấu
+                    _dbContext.DeThi.Update(selectedDeThi);
+                    _dbContext.SaveChanges();
+                }
+
                 MessageBox.Show("Xuất đề thi và đáp án thành công!", "Thành công", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
@@ -284,7 +341,6 @@ public partial class RaDeControl : UserControl, INotifyPropertyChanged
             }
         }
     }
-
 
     // Triển khai INotifyPropertyChanged.
     public event PropertyChangedEventHandler? PropertyChanged;
