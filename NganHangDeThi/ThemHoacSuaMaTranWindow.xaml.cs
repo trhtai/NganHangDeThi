@@ -77,73 +77,52 @@ public partial class ThemHoacSuaMaTranWindow : Window, INotifyPropertyChanged
 
     private void CapNhatThongTinBoLoc()
     {
-        IQueryable<CauHoi> query = _db.CauHoi;
+        // 1. Chỉ truy vấn các câu hỏi GỐC (Câu cha / Parent)
+        IQueryable<CauHoi> query = _db.CauHoi.Where(q => q.ParentId == null);
 
-        // 1. Lọc theo Chương / Môn
+        // 2. Áp dụng các bộ lọc
         if (CbbChuong.SelectedItem is Chuong chuong)
             query = query.Where(q => q.ChuongId == chuong.Id);
         else if (CbbMonHoc.SelectedItem is MonHoc mon)
             query = query.Where(q => q.Chuong!.MonHocId == mon.Id);
 
-        // 2. Lọc theo Mức độ
         if (CbbMucDo.SelectedValue is MucDoCauHoi mucDo)
             query = query.Where(q => q.MucDo == mucDo);
 
-        // 3. Lọc theo Loại
-        if (CbbLoai.SelectedValue is LoaiCauHoi loai)
-            query = query.Where(q => q.Loai == loai);
+        var selectedLoai = CbbLoai.SelectedValue as LoaiCauHoi?;
+        if (selectedLoai.HasValue)
+            query = query.Where(q => q.Loai == selectedLoai.Value);
 
-        // --- LOGIC THỐNG KÊ MỚI ---
+        // 3. Xác định chế độ hiển thị dựa trên Loại câu hỏi được chọn
+        bool cheDoHienThiChiTiet = selectedLoai.HasValue &&
+                                   (selectedLoai == LoaiCauHoi.DienKhuyet || selectedLoai == LoaiCauHoi.CauChum);
 
-        // Kiểm tra nếu là dạng Câu chùm hoặc Điền khuyết (những dạng có câu con)
-        if (CbbLoai.SelectedValue is LoaiCauHoi l && (l == LoaiCauHoi.DienKhuyet || l == LoaiCauHoi.CauChum))
+        // Đếm tổng số bản ghi (Câu đơn + Bài chùm đều tính là 1)
+        int tongSoBanGhi = query.Count();
+
+        if (tongSoBanGhi == 0)
         {
-            // Lấy danh sách các câu cha và đếm số lượng con của mỗi câu
-            // Lưu ý: Cần .ToList() trước khi GroupBy để tránh lỗi dịch SQL phức tạp
-            var parentStats = query
-                .Where(q => q.ParentId == null) // Chỉ lấy câu cha
-                .Select(q => q.DsCauHoiCon.Count) // Chỉ lấy số lượng con
-                .ToList();
+            TxtThongTinBoLoc.Text = "Không tìm thấy câu hỏi nào phù hợp.";
+            TxtThongTinBoLoc.Foreground = System.Windows.Media.Brushes.Red;
+            TxtThongTinBoLoc.ToolTip = null;
+            return;
+        }
 
-            if (parentStats.Count == 0)
-            {
-                TxtThongTinBoLoc.Text = "Không tìm thấy bài nào phù hợp.";
-                TxtThongTinBoLoc.Foreground = System.Windows.Media.Brushes.Red;
-            }
-            else
-            {
-                // Group theo số lượng câu con (Ví dụ: Có bao nhiêu bài 5 câu? Bao nhiêu bài 4 câu?)
-                var statText = parentStats
-                    .GroupBy(count => count)
-                    .OrderBy(g => g.Key)
-                    .Select(g => $"{g.Count()} bài có {g.Key} câu")
-                    .ToList();
+        if (cheDoHienThiChiTiet)
+        {
+            // Dạng chùm/điền khuyết: Cần đếm thêm số lượng câu con để User biết nhập
+            int tongSoCauCon = query.SelectMany(q => q.DsCauHoiCon).Count();
 
-                TxtThongTinBoLoc.Text = $"Tìm thấy {parentStats.Count} bài phù hợp:\n" +
-                                        string.Join("\n", statText) +
-                                        "\n-> Hãy nhập số lượng câu là bội số của các số trên.";
-                TxtThongTinBoLoc.Foreground = System.Windows.Media.Brushes.Blue;
-            }
+            TxtThongTinBoLoc.Text = $"Tìm thấy: {tongSoBanGhi} bài (chứa tổng {tongSoCauCon} câu hỏi nhỏ).";
+            TxtThongTinBoLoc.Foreground = System.Windows.Media.Brushes.Blue;
+            TxtThongTinBoLoc.ToolTip = "Hãy nhập tổng số câu hỏi nhỏ (Items) vào ô 'Số câu'.";
         }
         else
         {
-            // Dạng câu đơn (Trắc nghiệm / Tự luận thường)
-            // Đếm tổng số item con (vì câu chùm cũng có thể chứa câu trắc nghiệm đơn bên trong)
-            // Nhưng để đơn giản và chính xác với logic sinh đề (lấy item):
-
-            // Cách đếm chuẩn: Tổng số câu đơn lẻ + Tổng số câu con của các câu chùm (nếu câu chùm đó thuộc loại này)
-            // Tuy nhiên, ở màn hình này ta chỉ cần con số ước lượng.
-            // Đếm tất cả record thỏa mãn điều kiện lọc (bao gồm cả cha và con)
-            int totalRecords = query.Count();
-
-            // Trừ đi số câu cha (vì câu cha không phải là câu hỏi thi đơn vị)
-            // Câu cha là câu có ParentId = null VÀ có con.
-            int parentCount = query.Where(q => q.ParentId == null && q.DsCauHoiCon.Any()).Count();
-
-            int realItems = totalRecords - parentCount;
-
-            TxtThongTinBoLoc.Text = $"Tổng số câu hỏi khả dụng: {realItems} câu.";
+            // Dạng đơn hoặc Tất cả: Chỉ cần hiển thị tổng số lượng bản ghi
+            TxtThongTinBoLoc.Text = $"Tổng số câu hỏi khả dụng: {tongSoBanGhi} câu.";
             TxtThongTinBoLoc.Foreground = System.Windows.Media.Brushes.DarkSlateGray;
+            TxtThongTinBoLoc.ToolTip = null;
         }
     }
 

@@ -135,7 +135,7 @@ public static class ExportDeThiToWordService
                 // Bạn có thể cải tiến để in 4 đáp án trên 1 dòng nếu nội dung ngắn (dùng Table hoặc Tab)
                 foreach (var d in dapAns.OrderBy(x => x.ViTriGoc))
                 {
-                    var pDapAn = new Paragraph(new ParagraphProperties(new Indentation { Left = "720" }));
+                    var pDapAn = new Paragraph();
 
                     pDapAn.Append(new Run(
                         new RunProperties(new RunFonts { Ascii = "Times New Roman" }, new FontSize { Val = "24" }, new Bold()),

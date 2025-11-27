@@ -12,7 +12,6 @@ namespace NganHangDeThi.Helpers;
 
 public static class HtmlToWordHelper
 {
-    // Regex tách token: Thẻ HTML, Placeholder ảnh, hoặc Text thường
     private static readonly Regex _tokenRegex = new Regex(@"(<[^>]+>)|(\{\{IMG:[^}]+\}\})|([^<{}]+)", RegexOptions.Compiled);
 
     public static List<OpenXmlElement> ConvertHtmlToElements(MainDocumentPart mainPart, string html, string imageBasePath, bool ignoreColor = false)
@@ -23,8 +22,8 @@ public static class HtmlToWordHelper
         string decodedHtml = WebUtility.HtmlDecode(html);
         var matches = _tokenRegex.Matches(decodedHtml);
 
-        // Trạng thái định dạng
-        bool isBold = false;
+        // Các cờ định dạng
+        // bool isBold = false; // -> Đã vô hiệu hóa Bold
         bool isItalic = false;
         bool isUnderline = false;
         bool isSub = false;
@@ -38,9 +37,12 @@ public static class HtmlToWordHelper
             if (match.Groups[1].Success) // Là Tag HTML
             {
                 string lowerTag = token.ToLowerInvariant();
-                if (lowerTag.Contains("<b>") || lowerTag.Contains("<strong>")) isBold = true;
-                else if (lowerTag.Contains("</b>") || lowerTag.Contains("</strong>")) isBold = false;
-                else if (lowerTag.Contains("<i>") || lowerTag.Contains("<em>")) isItalic = true;
+
+                // --- ĐÃ VÔ HIỆU HÓA BẮT THẺ BOLD ---
+                // if (lowerTag.Contains("<b>") || lowerTag.Contains("<strong>")) isBold = true;
+                // else if (lowerTag.Contains("</b>") || lowerTag.Contains("</strong>")) isBold = false;
+
+                if (lowerTag.Contains("<i>") || lowerTag.Contains("<em>")) isItalic = true;
                 else if (lowerTag.Contains("</i>") || lowerTag.Contains("</em>")) isItalic = false;
                 else if (lowerTag.Contains("<u>")) isUnderline = true;
                 else if (lowerTag.Contains("</u>")) isUnderline = false;
@@ -48,13 +50,11 @@ public static class HtmlToWordHelper
                 else if (lowerTag.Contains("</sub>")) isSub = false;
                 else if (lowerTag.Contains("<sup>")) isSup = true;
                 else if (lowerTag.Contains("</sup>")) isSup = false;
-
                 else if (lowerTag.Contains("color:red") || lowerTag.Contains("color: red"))
                 {
                     if (!ignoreColor) isRed = true;
                 }
                 else if (lowerTag.Contains("</span>")) isRed = false;
-
                 else if (lowerTag.Contains("<br>") || lowerTag.Contains("<br/>"))
                 {
                     elements.Add(new Run(new Break()));
@@ -70,24 +70,28 @@ public static class HtmlToWordHelper
             {
                 var run = new Run(new Text(token) { Space = SpaceProcessingModeValues.Preserve });
                 var props = new RunProperties();
-                bool hasProps = false; // Biến này thực ra không cần thiết nữa vì ta luôn set font/size, nhưng giữ lại cho logic cũ
 
-                // --- SỬA ĐỔI QUAN TRỌNG TẠI ĐÂY ---
-                // Thay vì chỉ set khi True, ta set luôn giá trị Val = isBold.
-                // Nếu isBold = false -> Nó sẽ sinh ra thẻ <w:b val="0"/> (Tắt in đậm).
-                // Điều này giúp ngắt sự kế thừa in đậm từ "Câu 1:"
-                props.Bold = new Bold { Val = isBold };
+                // --- CHỐT: LUÔN LUÔN TẮT IN ĐẬM ---
+                // Dùng OnOffValue(false) để sinh mã XML <w:b val="0"/> -> Ép buộc tắt Bold
+                props.Bold = new Bold { Val = false };
+                props.BoldComplexScript = new BoldComplexScript { Val = false };
 
-                if (isItalic) { props.Italic = new Italic(); }
+                if (isItalic)
+                {
+                    var italicVal = OnOffValue.FromBoolean(true);
+                    props.Italic = new Italic { Val = italicVal };
+                    props.ItalicComplexScript = new ItalicComplexScript { Val = italicVal };
+                }
+
                 if (isUnderline) { props.Underline = new Underline { Val = UnderlineValues.Single }; }
-
                 if (isRed) { props.Color = new Color { Val = "FF0000" }; }
-
                 if (isSub) { props.VerticalTextAlignment = new VerticalTextAlignment { Val = VerticalPositionValues.Subscript }; }
                 if (isSup) { props.VerticalTextAlignment = new VerticalTextAlignment { Val = VerticalPositionValues.Superscript }; }
 
-                props.RunFonts = new RunFonts { Ascii = "Times New Roman", HighAnsi = "Times New Roman" };
+                // Font chữ & Cỡ chữ
+                props.RunFonts = new RunFonts { Ascii = "Times New Roman", HighAnsi = "Times New Roman", ComplexScript = "Times New Roman" };
                 props.FontSize = new FontSize { Val = "24" };
+                props.FontSizeComplexScript = new FontSizeComplexScript { Val = "24" };
 
                 run.RunProperties = props;
                 elements.Add(run);
@@ -97,7 +101,6 @@ public static class HtmlToWordHelper
         return elements;
     }
 
-    // ... (Hàm CreateImageDrawing và GetImagePartType giữ nguyên) ...
     public static Drawing? CreateImageDrawing(MainDocumentPart mainPart, string imagePath)
     {
         if (!File.Exists(imagePath)) return null;
