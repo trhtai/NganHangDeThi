@@ -158,6 +158,7 @@ public partial class ThemCauHoiTuFileWindow : Window, INotifyPropertyChanged
             _questionExtractorService.CommitImages();
 
             MessageBox.Show($"Đã lưu {soLuong} câu hỏi vào CSDL.", "Thành công", MessageBoxButton.OK, MessageBoxImage.Information);
+            //MessageBox.Show($"Đã xử lý thành công {soLuong} mục dữ liệu (bao gồm cả đoạn văn và câu hỏi).", "Thành công", MessageBoxButton.OK, MessageBoxImage.Information);
             DialogResult = true;
             Close();
         }
