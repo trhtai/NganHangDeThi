@@ -234,8 +234,6 @@ public class QuestionExtractorService
             result.Add(question);
     }
 
-    // ... (Các hàm phụ trợ ParseMucDo, CleanTags, ConvertToHtml, ExtractImage, SaveToDatabase giữ nguyên) ...
-
     private MucDoCauHoi ParseMucDo(string tag)
     {
         tag = tag.ToUpper();

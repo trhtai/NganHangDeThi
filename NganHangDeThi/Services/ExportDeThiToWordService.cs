@@ -112,6 +112,7 @@ public static class ExportDeThiToWordService
 
                 // 1. In nội dung câu hỏi
                 var pCauHoi = new Paragraph();
+                // Thêm khoảng cách nhỏ phía trên mỗi câu hỏi (để thoáng hơn chút, nhưng không quá xa)
                 pCauHoi.Append(new Run(
                     new RunProperties(new Bold(), new RunFonts { Ascii = "Times New Roman" }, new FontSize { Val = "24" }),
                     new Text($"Câu {stt++}: ") { Space = SpaceProcessingModeValues.Preserve }
