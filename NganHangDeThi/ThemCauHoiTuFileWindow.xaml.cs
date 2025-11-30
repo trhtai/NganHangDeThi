@@ -197,5 +197,74 @@ public partial class ThemCauHoiTuFileWindow : Window, INotifyPropertyChanged
             }
         }
     }
+
+    private void BtnThemMonNhanh_Click(object sender, RoutedEventArgs e)
+    {
+        var window = new ThemMonHocWindow
+        {
+            Owner = this
+        };
+
+        if (window.ShowDialog() == true && window.MonHocMoi != null)
+        {
+            try
+            {
+                // Lưu vào CSDL
+                _db.MonHoc.Add(window.MonHocMoi);
+                _db.SaveChanges();
+
+                // Tải lại danh sách môn
+                LoadDsMonHoc();
+
+                // Tự động chọn môn vừa tạo
+                // (Cần tìm object trong DsMonHoc tương ứng với Id mới tạo để Binding hoạt động đúng)
+                MonHocDangChon = DsMonHoc.FirstOrDefault(m => m.Id == window.MonHocMoi.Id);
+
+                MessageBox.Show($"Đã thêm môn \"{window.MonHocMoi.TenMon}\" thành công!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Lỗi khi lưu môn học: " + ex.Message, "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+    }
+
+    // 2. Xử lý thêm nhanh Chương
+    private void BtnThemChuongNhanh_Click(object sender, RoutedEventArgs e)
+    {
+        // Kiểm tra xem đã chọn môn học chưa
+        if (MonHocDangChon == null)
+        {
+            MessageBox.Show("Vui lòng chọn Môn học trước khi thêm Chương.", "Cảnh báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        var window = new ThemChuongWindow(MonHocDangChon.Id)
+        {
+            Owner = this
+        };
+
+        if (window.ShowDialog() == true && window.ChuongMoi != null)
+        {
+            try
+            {
+                // Lưu vào CSDL
+                _db.Chuong.Add(window.ChuongMoi);
+                _db.SaveChanges();
+
+                // Tải lại danh sách chương (Hàm LoadDsChuongTheoMonHoc sẽ chạy vì MonHocDangChon không đổi, ta cần gọi thủ công hoặc refresh)
+                LoadDsChuongTheoMonHoc();
+
+                // Tự động chọn chương vừa tạo
+                ChuongDangChon = DsChuongTheoMonHoc.FirstOrDefault(c => c.Id == window.ChuongMoi.Id);
+
+                MessageBox.Show($"Đã thêm chương \"{window.ChuongMoi.TenChuong}\" thành công!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Lỗi khi lưu chương: " + ex.Message, "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+    }
 }
 

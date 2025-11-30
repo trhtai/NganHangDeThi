@@ -32,11 +32,10 @@ từ đó đề xuất cho user nhập số lượng câu điền khuyết dựa
 11. (FIXED) Lọc câu hỏi theo môn mặc định
 12. (FIXED) Lọc đề thi theo lớp học
 13. (FIXED) Loai bỏ việc chọn môn học khi tạo đề thi từ ma trận, vì ma trận đã có môn học rồi
-	
-14. Tối ưu lại UX
+14. (FIXED) Tối ưu lại UX
 	+ thêm môn và chương khi thêm ma trận
     + thêm lớp khi tạo đề thi 
-    + thêm môn và chương khi tạo đề thi từ file
+    + thêm môn và chương khi thêm câu hỏi từ file
 
 15. Có đề gốc, sau đó sinh các đề con từ đề gốc
 	+ lưu lại đề con 

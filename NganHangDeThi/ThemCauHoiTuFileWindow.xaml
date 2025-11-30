@@ -41,8 +41,65 @@
                 </Grid.RowDefinitions>
 
                 <StackPanel Orientation="Horizontal" Grid.Row="0">
-                    <TextBlock Text="Chọn môn học" FontFamily="13" FontWeight="SemiBold" Margin="18 0 10 0"
-                    Foreground="#121518" HorizontalAlignment="Left" VerticalAlignment="Center" />
+                    <StackPanel Orientation="Vertical" Margin="0 0 10 0">
+                        <TextBlock Text="Chọn môn học" FontFamily="13" FontWeight="SemiBold" Margin="0 0 0 5"
+               Foreground="#121518" HorizontalAlignment="Left" />
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <ComboBox Grid.Column="0" Width="360" Style="{StaticResource ComboBoxFlatStyle}"
+                  ItemsSource="{Binding DsMonHoc}"
+                  SelectedItem="{Binding MonHocDangChon, Mode=TwoWay}"
+                  DisplayMemberPath="TenMon" />
+
+                            <Button Grid.Column="1" Width="30" Height="30" Margin="5 0 0 0"
+                Style="{StaticResource GridEditButton}" 
+                ToolTip="Thêm môn học mới"
+                Click="BtnThemMonNhanh_Click">
+                                <Icon:PackIconMaterial Kind="Plus" Width="10" Height="10" />
+                            </Button>
+                        </Grid>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Vertical">
+                        <TextBlock Text="Chọn chương" FontFamily="13" FontWeight="SemiBold" Margin="0 0 0 5"
+               Foreground="#121518" HorizontalAlignment="Left" />
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <ComboBox Grid.Column="0" Width="360" Style="{StaticResource ComboBoxFlatStyle}"
+                  ItemsSource="{Binding DsChuongTheoMonHoc}"
+                  SelectedItem="{Binding ChuongDangChon, Mode=TwoWay}">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Margin="0" Padding="0">
+                                            <TextBlock.Inlines>
+                                                <Run Text="{Binding ViTri, StringFormat=Chương {0}: }"/>
+                                                <Run Text="{Binding TenChuong}"/>
+                                            </TextBlock.Inlines>
+                                        </TextBlock>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+
+                            <Button Grid.Column="1" Width="30" Height="30" Margin="5 0 0 0"
+                Style="{StaticResource GridEditButton}" 
+                ToolTip="Thêm chương mới"
+                Click="BtnThemChuongNhanh_Click">
+                                <Icon:PackIconMaterial Kind="Plus" Width="10" Height="10" />
+                            </Button>
+                        </Grid>
+                    </StackPanel>
+                    <!--<TextBlock Text="Chọn môn học" FontFamily="13" FontWeight="SemiBold" Margin="18 0 10 0"
+                        Foreground="#121518" HorizontalAlignment="Left" VerticalAlignment="Center" />
 
                     <ComboBox Width="400" Style="{StaticResource ComboBoxFlatStyle}"
                       ItemsSource="{Binding DsMonHoc}"
@@ -67,7 +124,7 @@
                                 </TextBlock>
                             </DataTemplate>
                         </ComboBox.ItemTemplate>
-                    </ComboBox>
+                    </ComboBox>-->
                 </StackPanel>
 
                 <StackPanel HorizontalAlignment="Right" Orientation="Horizontal" Grid.Row="0">

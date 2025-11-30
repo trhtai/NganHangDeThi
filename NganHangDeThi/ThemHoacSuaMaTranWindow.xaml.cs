@@ -237,4 +237,74 @@ public partial class ThemHoacSuaMaTranWindow : Window, INotifyPropertyChanged
             DragMove();
         }
     }
+
+    // 1. Hàm xử lý thêm nhanh Môn Học
+    private void BtnThemMonNhanh_Click(object sender, RoutedEventArgs e)
+    {
+        var window = new ThemMonHocWindow
+        {
+            Owner = this
+        };
+
+        if (window.ShowDialog() == true && window.MonHocMoi != null)
+        {
+            try
+            {
+                // Lưu vào DB
+                _db.MonHoc.Add(window.MonHocMoi);
+                _db.SaveChanges();
+
+                // Reload lại danh sách môn học
+                _dsMon = _db.MonHoc.OrderBy(m => m.TenMon).ToList();
+                CbbMonHoc.ItemsSource = _dsMon;
+
+                // Tự động chọn môn vừa thêm
+                CbbMonHoc.SelectedValue = window.MonHocMoi.Id;
+
+                MessageBox.Show($"Đã thêm môn \"{window.MonHocMoi.TenMon}\" thành công!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Lỗi khi lưu môn học: " + ex.Message, "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+    }
+
+    // 2. Hàm xử lý thêm nhanh Chương
+    private void BtnThemChuongNhanh_Click(object sender, RoutedEventArgs e)
+    {
+        // Kiểm tra xem đã chọn môn học chưa
+        if (CbbMonHoc.SelectedItem is not MonHoc monHocDangChon)
+        {
+            MessageBox.Show("Vui lòng chọn Môn học trước khi thêm Chương.", "Cảnh báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        var window = new ThemChuongWindow(monHocDangChon.Id)
+        {
+            Owner = this
+        };
+
+        if (window.ShowDialog() == true && window.ChuongMoi != null)
+        {
+            try
+            {
+                // Lưu vào DB
+                _db.Chuong.Add(window.ChuongMoi);
+                _db.SaveChanges();
+
+                // Reload lại danh sách chương của môn hiện tại
+                LoadChuongTheoMon();
+
+                // Tự động chọn chương vừa thêm
+                CbbChuong.SelectedValue = window.ChuongMoi.Id;
+
+                MessageBox.Show($"Đã thêm chương \"{window.ChuongMoi.TenChuong}\" thành công!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Lỗi khi lưu chương: " + ex.Message, "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+    }
 }
