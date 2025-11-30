@@ -20,6 +20,32 @@ public partial class RaDeControl : UserControl, INotifyPropertyChanged
     private ObservableCollection<DeThi> _dsDeThi = [];
     private readonly string _baseImageFolder;
     public ObservableCollection<MaTran> MaTranView { get; set; } = [];
+    public ObservableCollection<LopHoc> DsLopHoc { get; set; } = [];
+
+    private LopHoc? _lopHocLoc;
+    public LopHoc? LopHocLoc
+    {
+        get => _lopHocLoc;
+        set
+        {
+            if (_lopHocLoc != value)
+            {
+                _lopHocLoc = value;
+                OnPropertyChanged(nameof(LopHocLoc));
+                DeThiView.Refresh(); // Kích hoạt lại bộ lọc khi chọn lớp khác
+            }
+        }
+    }
+
+    private void LoadDsLopHoc()
+    {
+        DsLopHoc.Clear();
+        var listLop = _dbContext.LopHoc.OrderBy(x => x.MaLop).ToList();
+        foreach (var lop in listLop)
+        {
+            DsLopHoc.Add(lop);
+        }
+    }
 
     private bool _daTaiMaTran = false;
     private bool _daTaiDeThi = false;
@@ -54,6 +80,7 @@ public partial class RaDeControl : UserControl, INotifyPropertyChanged
 
         LoadDeThi();
         LoadMaTran();
+        LoadDsLopHoc();
     }
 
     private void LoadMaTran()
@@ -75,14 +102,41 @@ public partial class RaDeControl : UserControl, INotifyPropertyChanged
         OnPropertyChanged(nameof(DeThiView));
     }
 
+    //private bool FilterDeThi(object obj)
+    //{
+    //    if (obj is not DeThi lh) return false;
+    //    if (string.IsNullOrWhiteSpace(TuKhoaTimKiemDeThi)) return true;
+
+    //    var keyword = TuKhoaTimKiemDeThi.ToLowerInvariant();
+
+    //    return (lh.TieuDe?.Contains(keyword, StringComparison.OrdinalIgnoreCase) ?? false);
+    //}
     private bool FilterDeThi(object obj)
     {
-        if (obj is not DeThi lh) return false;
-        if (string.IsNullOrWhiteSpace(TuKhoaTimKiemDeThi)) return true;
+        if (obj is not DeThi dt) return false;
 
-        var keyword = TuKhoaTimKiemDeThi.ToLowerInvariant();
+        // 1. Kiểm tra từ khóa
+        bool matchKeyword = true;
+        if (!string.IsNullOrWhiteSpace(TuKhoaTimKiemDeThi))
+        {
+            var keyword = TuKhoaTimKiemDeThi.ToLowerInvariant();
+            matchKeyword = dt.TieuDe?.Contains(keyword, StringComparison.OrdinalIgnoreCase) ?? false;
+        }
 
-        return (lh.TieuDe?.Contains(keyword, StringComparison.OrdinalIgnoreCase) ?? false);
+        // 2. [THÊM MỚI] Kiểm tra Lớp học
+        bool matchLopHoc = true;
+        if (LopHocLoc != null)
+        {
+            matchLopHoc = dt.LopHocId == LopHocLoc.Id;
+        }
+
+        return matchKeyword && matchLopHoc;
+    }
+
+    private void BtnXoaBoLoc_Click(object sender, RoutedEventArgs e)
+    {
+        TuKhoaTimKiemDeThi = string.Empty;
+        LopHocLoc = null;
     }
 
     private List<DeThi> LayDsDeThi()

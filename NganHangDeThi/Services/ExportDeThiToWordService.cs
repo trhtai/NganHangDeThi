@@ -14,7 +14,7 @@ public static class ExportDeThiToWordService
     public static void Export(DeThiExportData data, string filePath, string imageBasePath = "")
     {
         string mauTNPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets", "Templates", "maudethi.docx");
-        // ... (Giữ nguyên đoạn copy template) ...
+
         byte[] docxBytes = File.ReadAllBytes(mauTNPath);
         using var inputStream = new MemoryStream(docxBytes);
         using var docxStream = new MemoryStream();
@@ -26,6 +26,16 @@ public static class ExportDeThiToWordService
             var mainPart = wordDoc.MainDocumentPart!;
             var body = mainPart.Document.Body;
             if (body == null) return;
+
+            // --- 1. XỬ LÝ TIỀN TỐ "CÂU" / "QUESTION" ---
+            string tenMon = data.DeThi.MonHoc?.TenMon ?? "";
+
+            // Danh sách từ khóa nhận diện môn Tiếng Anh
+            string[] tuKhoaTiengAnh = { "tiếng anh", "anh văn", "english", "ngoại ngữ" };
+
+            bool laMonTiengAnh = tuKhoaTiengAnh.Any(k => tenMon.Contains(k, StringComparison.OrdinalIgnoreCase));
+            string prefixCauHoi = laMonTiengAnh ? "Question" : "Câu";
+            // ---------------------------------------------
 
             var placeholderMappings = new Dictionary<string, string>
             {
@@ -39,8 +49,8 @@ public static class ExportDeThiToWordService
             };
             DocxHelper.ReplacePlaceholders(body, placeholderMappings);
 
-            // Gọi hàm replace mới
-            ReplaceDanhSachCauHoi(mainPart, body, data.CauHoiVaDapAn, imageBasePath);
+            // Truyền thêm biến prefixCauHoi vào hàm Replace
+            ReplaceDanhSachCauHoi(mainPart, body, data.CauHoiVaDapAn, imageBasePath, prefixCauHoi);
 
             wordDoc.MainDocumentPart!.Document.Save();
         }
@@ -48,8 +58,9 @@ public static class ExportDeThiToWordService
         File.WriteAllBytes(filePath, docxStream.ToArray());
     }
 
+    // Thêm tham số 'prefixLabel' (Câu/Question)
     private static void ReplaceDanhSachCauHoi(MainDocumentPart mainPart, Body body,
-        List<(CauHoi CauHoi, List<CauTraLoi> DapAn)> dataList, string imageBasePath)
+        List<(CauHoi CauHoi, List<CauTraLoi> DapAn)> dataList, string imageBasePath, string prefixLabel)
     {
         var paragraphs = body.Elements<Paragraph>().ToList();
         var placeholderPara = paragraphs.FirstOrDefault(p => p.InnerText.Contains("<<danh_sach_cau_hoi>>"));
@@ -65,23 +76,17 @@ public static class ExportDeThiToWordService
         {
             var firstItem = group.First().CauHoi;
 
-            // Nếu có Parent -> In nội dung Parent (Giả thuyết chung/Đoạn văn)
+            // 1. In nội dung Parent (Đoạn văn/Giả thuyết) - Nếu có
             if (firstItem.Parent != null)
             {
                 var pParent = new Paragraph();
                 string parentContent = firstItem.Parent.NoiDung;
 
-                // --- LOGIC MỚI: Tự động đánh số vào chỗ trống ---
-                // Kiểm tra nếu đoạn văn có chứa dấu gạch dưới (đại diện cho chỗ trống)
+                // Logic tự động đánh số vào chỗ trống ___ -> (1) _______
                 if (parentContent.Contains("___"))
                 {
-                    // Regex tìm các chuỗi gạch dưới liên tiếp (ví dụ: ___, ____, _____)
                     var regexBlank = new Regex(@"_{3,}");
-
-                    int tempStt = stt; // Biến tạm để đếm số thứ tự mà không ảnh hưởng biến chính
-
-                    // Thay thế mỗi dấu gạch dưới tìm thấy bằng số thứ tự tương ứng
-                    // Ví dụ: "____" -> " (1) ____ "
+                    int tempStt = stt;
                     parentContent = regexBlank.Replace(parentContent, match =>
                     {
                         string replacement = $" ({tempStt}) _______ ";
@@ -89,11 +94,8 @@ public static class ExportDeThiToWordService
                         return replacement;
                     });
                 }
-                // ------------------------------------------------
 
                 var contentParent = HtmlToWordHelper.ConvertHtmlToElements(mainPart, parentContent, imageBasePath);
-
-                // Xử lý ảnh của câu Parent
                 if (!string.IsNullOrWhiteSpace(firstItem.Parent.HinhAnh))
                 {
                     var drawing = HtmlToWordHelper.CreateImageDrawing(mainPart, Path.Combine(imageBasePath, firstItem.Parent.HinhAnh));
@@ -104,20 +106,20 @@ public static class ExportDeThiToWordService
                 insertAfter = body.InsertAfter(pParent, insertAfter);
             }
 
-            // In danh sách các câu hỏi con
+            // 2. In danh sách các câu hỏi con
             foreach (var item in group)
             {
                 var cauHoi = item.CauHoi;
                 var dapAns = item.DapAn;
 
-                // 1. In nội dung câu hỏi
+                // In Câu hỏi (Sử dụng prefixLabel động)
                 var pCauHoi = new Paragraph();
-                // Thêm khoảng cách nhỏ phía trên mỗi câu hỏi (để thoáng hơn chút, nhưng không quá xa)
-                pCauHoi.Append(new Run(
-                    new RunProperties(new Bold(), new RunFonts { Ascii = "Times New Roman" }, new FontSize { Val = "24" }),
-                    new Text($"Câu {stt++}: ") { Space = SpaceProcessingModeValues.Preserve }
-                ));
+                pCauHoi.ParagraphProperties = new ParagraphProperties(new SpacingBetweenLines { Before = "120" }); // 6pt
 
+                pCauHoi.Append(new Run(
+                    new RunProperties(new Bold { Val = true }, new RunFonts { Ascii = "Times New Roman" }, new FontSize { Val = "24" }),
+                    new Text($"{prefixLabel} {stt++}: ") { Space = SpaceProcessingModeValues.Preserve } // <-- ĐỔI Ở ĐÂY
+                ));
                 pCauHoi.Append(HtmlToWordHelper.ConvertHtmlToElements(mainPart, cauHoi.NoiDung, imageBasePath));
 
                 if (!string.IsNullOrWhiteSpace(cauHoi.HinhAnh))
@@ -125,21 +127,17 @@ public static class ExportDeThiToWordService
                     var drawing = HtmlToWordHelper.CreateImageDrawing(mainPart, Path.Combine(imageBasePath, cauHoi.HinhAnh));
                     if (drawing != null) pCauHoi.Append(new Run(drawing));
                 }
-
                 insertAfter = body.InsertAfter(pCauHoi, insertAfter);
 
-                // 2. In các đáp án
+                // In Đáp án
                 char ma = 'A';
-
-                // Nếu là trắc nghiệm điền khuyết hoặc câu đơn bình thường -> In dọc hoặc ngang tùy ý
-                // Ở đây giữ logic cũ: Mỗi đáp án 1 dòng (dạng liệt kê)
-                // Bạn có thể cải tiến để in 4 đáp án trên 1 dòng nếu nội dung ngắn (dùng Table hoặc Tab)
                 foreach (var d in dapAns.OrderBy(x => x.ViTriGoc))
                 {
                     var pDapAn = new Paragraph();
 
                     pDapAn.Append(new Run(
-                        new RunProperties(new RunFonts { Ascii = "Times New Roman" }, new FontSize { Val = "24" }, new Bold()),
+                        new RunProperties(new RunFonts { Ascii = "Times New Roman" }, new FontSize { Val = "24" },
+                        new Bold { Val = false }, new BoldComplexScript { Val = false }),
                         new Text($"{ma++}. ")
                     ));
 
@@ -153,11 +151,9 @@ public static class ExportDeThiToWordService
 
                     insertAfter = body.InsertAfter(pDapAn, insertAfter);
                 }
-
-                //insertAfter = body.InsertAfter(new Paragraph(new Run(new Text(""))), insertAfter);
             }
-            // 3. SAU KHI HẾT NHÓM (Hết bài đọc hoặc hết câu lẻ) -> MỚI THÊM DÒNG TRỐNG LỚN
-            // Tạo khoảng cách rõ ràng giữa các nhóm câu hỏi
+
+            // 3. SAU KHI HẾT NHÓM -> Thêm dòng trống
             insertAfter = body.InsertAfter(new Paragraph(new Run(new Text(""))), insertAfter);
         }
 

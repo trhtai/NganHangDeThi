@@ -5,6 +5,7 @@ using NganHangDeThi.Models;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 
 namespace NganHangDeThi;
@@ -49,10 +50,79 @@ public partial class ThemDeThiWindow : Window, INotifyPropertyChanged
         OnPropertyChanged(nameof(DsLopHoc));
     }
 
+    // Thêm hàm này vào trong class ThemDeThiWindow
+    private void BtnThemLopHocNhanh_Click(object sender, RoutedEventArgs e)
+    {
+        // 1. Tận dụng lại Window thêm lớp học đã có
+        var window = new ThemLopHocWindow
+        {
+            Owner = this
+        };
+
+        if (window.ShowDialog() == true && window.LopHocMoi != null)
+        {
+            try
+            {
+                // 2. Lưu vào Database
+                // Lưu ý: ThemLopHocWindow chỉ tạo object, chưa SaveChanges, nên ta phải Save ở đây
+                _dbContext.LopHoc.Add(window.LopHocMoi);
+                _dbContext.SaveChanges();
+
+                // 3. Cập nhật giao diện (Thêm vào ObservableCollection)
+                DsLopHoc.Add(window.LopHocMoi);
+
+                // 4. Tự động chọn lớp vừa tạo
+                SelectedLopHoc = window.LopHocMoi;
+
+                MessageBox.Show($"Đã thêm và chọn lớp {window.LopHocMoi.MaLop} thành công!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Lỗi khi lưu lớp học: " + ex.Message, "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+    }
+
     private void BtnHuy_Click(object sender, RoutedEventArgs e)
     {
         DialogResult = false;
         Close();
+    }
+
+    // Thêm hàm này vào class ThemDeThiWindow
+    private void CbbMaTran_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        // Nếu chưa chọn ma trận hoặc bỏ chọn -> Reset môn học
+        if (SelectedMaTran == null)
+        {
+            SelectedMonHoc = null;
+            OnPropertyChanged(nameof(SelectedMonHoc));
+            return;
+        }
+
+        // LOGIC: Lấy môn học từ chi tiết ma trận
+        // Truy vấn: ChiTietMaTran -> Chương -> MonHocId
+        // Chỉ cần lấy 1 dòng chi tiết bất kỳ là đủ để biết môn học
+        var monHocId = _dbContext.ChiTietMaTran
+            .Where(ct => ct.MaTranId == SelectedMaTran.Id)
+            .Select(ct => ct.Chuong.MonHocId)
+            .FirstOrDefault();
+
+        if (monHocId > 0)
+        {
+            // Tìm object Môn học trong danh sách đã load để gán vào ComboBox
+            SelectedMonHoc = DsMonHoc.FirstOrDefault(m => m.Id == monHocId);
+        }
+        else
+        {
+            // Trường hợp ma trận rỗng (chưa setup chi tiết)
+            SelectedMonHoc = null;
+            // Tùy chọn: Có thể hiện thông báo nhắc nhở
+            // MessageBox.Show("Ma trận này chưa có chi tiết câu hỏi nên không xác định được môn học!");
+        }
+
+        // Cập nhật giao diện
+        OnPropertyChanged(nameof(SelectedMonHoc));
     }
 
     private void BtnTao_Click(object sender, RoutedEventArgs e)

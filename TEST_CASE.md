@@ -25,12 +25,19 @@ dẫn đến không thể phát hiện trùng lặp được
 từ đó đề xuất cho user nhập số lượng câu điền khuyết dựa vào bội số của số lượng các câu con trong câu điền khuyết.
 7. (FIXED) Cách hiển thị câu hỏi con, đáp án khi thêm đề từ file
 8. (FIXED) Cách hiển thị danh sách câu hỏi trong NganHangCauHoiConotrol
+9. (FIXED) Đổi "Câu 1: ..." thành "Question 1: ..."
+	+ Nhưng môn học có tên là "Tiếng anh", "Anh văn", "English",... thì đổi
+10. (FIXED) chỉ hiển thị các câu hỏi đơn, giả thuyết điền khuyết và giả khuyết câu chùm.
+	Không hiển thị các câu hỏi con
+11. (FIXED) Lọc câu hỏi theo môn mặc định
+12. (FIXED) Lọc đề thi theo lớp học
+13. (FIXED) Loai bỏ việc chọn môn học khi tạo đề thi từ ma trận, vì ma trận đã có môn học rồi
+	
+14. Tối ưu lại UX
+	+ thêm môn và chương khi thêm ma trận
+    + thêm lớp khi tạo đề thi 
+    + thêm môn và chương khi tạo đề thi từ file
 
-9. Đổi "Câu 1: ..." thành "Question 1: ..."
-	+ Nhưng mỗn học có tên là ""
-10. Có thể thêm lớp hoặc môn học,... trong khi tạo ma trận, đề thi,...
-11. Tối ưu lại giao diện
-12. Lọc câu hỏi theo môn, theo lớp.
-13. Có đề gốc, sau đó sinh các đề con từ đề gốc
+15. Có đề gốc, sau đó sinh các đề con từ đề gốc
 	+ lưu lại đề con 
 	+ câpj nhật đề gốc -> sinh đề con -> cập nhật đề con

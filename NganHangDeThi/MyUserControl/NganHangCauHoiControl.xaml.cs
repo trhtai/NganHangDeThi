@@ -292,12 +292,35 @@ public partial class NganHangCauHoiControl : UserControl, INotifyPropertyChanged
         _dsCauHoi = new ObservableCollection<CauHoi>(dsCauHoi);
         _cauHoiView = CollectionViewSource.GetDefaultView(_dsCauHoi);
         _cauHoiView.Filter = FilterCauHoi;
-        OnPropertyChanged(nameof(CauHoiView));
-        OnPropertyChanged(nameof(TongDangHienThi)); 
-        OnPropertyChanged(nameof(TongTatCa));
 
+        // Cập nhật danh sách môn học
         DsMonHoc = new ObservableCollection<MonHoc>(_dbContext.MonHoc.OrderBy(m => m.TenMon));
         OnPropertyChanged(nameof(DsMonHoc));
+
+        // --- LOGIC MỚI: Mặc định chọn môn học đầu tiên ---
+        if (DsMonHoc.Any())
+        {
+            // Nếu chưa chọn môn nào -> Chọn môn đầu tiên
+            if (MonHocLoc == null)
+            {
+                MonHocLoc = DsMonHoc.First();
+            }
+            // Nếu môn đang chọn bị xóa khỏi DB -> Reset về môn đầu tiên
+            else if (!DsMonHoc.Any(m => m.Id == MonHocLoc.Id))
+            {
+                MonHocLoc = DsMonHoc.First();
+            }
+        }
+        else
+        {
+            // Trường hợp không có môn nào trong DB
+            MonHocLoc = null;
+        }
+        // ------------------------------------------------
+
+        OnPropertyChanged(nameof(CauHoiView));
+        OnPropertyChanged(nameof(TongDangHienThi));
+        OnPropertyChanged(nameof(TongTatCa));
     }
 
     private MucDoCauHoi? _mucDoLoc = null;
@@ -413,7 +436,11 @@ public partial class NganHangCauHoiControl : UserControl, INotifyPropertyChanged
 
     private List<CauHoi> LayDsCauHoi()
     {
-        return [.. _dbContext.CauHoi.Include(x => x.Chuong)];
+        // Chỉ lấy câu cha/câu đơn
+        return [.. _dbContext.CauHoi
+                    .Include(x => x.Chuong)
+                    .Where(x => x.ParentId == null)
+                    .OrderByDescending(x => x.Id)]; // Sắp xếp câu mới nhất lên đầu
     }
 
     // Triển khai INotifyPropertyChanged.

@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:NganHangDeThi" 
-        xmlns:uc="clr-namespace:NganHangDeThi.MyUserControl"
+        xmlns:uc="clr-namespace:NganHangDeThi.MyUserControl" xmlns:Icon="http://metro.mahapps.com/winfx/xaml/iconpacks"
         mc:Ignorable="d"
         Title="ThemDeThiWindow" Height="810" Width="600"
         WindowStartupLocation="CenterScreen"
@@ -44,44 +44,70 @@
                 <uc:MyTextBoxControl Text="{Binding KyThi}" Caption="Kỳ thi" />
             </StackPanel>
 
-            <StackPanel Grid.Row="3" Orientation="Vertical">
+            <!--<StackPanel Grid.Row="3" Orientation="Vertical">
                 <TextBlock Padding="8" Text="Lớp học" FontFamily="13" Margin="12 0 10 0"
                     Foreground="#868686" HorizontalAlignment="Left" VerticalAlignment="Center" />
                 <ComboBox Style="{StaticResource ComboBoxFlatStyle}" Width="560" Height="30" Margin="12 0 10 0"
                    ItemsSource="{Binding DsLopHoc}" 
                     SelectedItem="{Binding SelectedLopHoc}" DisplayMemberPath="MaLop"/>
+            </StackPanel>-->
+            <StackPanel Grid.Row="3" Orientation="Vertical">
+                <TextBlock Padding="8" Text="Lớp học" FontFamily="13" Margin="12 0 10 0"
+               Foreground="#868686" HorizontalAlignment="Left" VerticalAlignment="Center" />
+
+                <Grid Margin="12 0 10 0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <ComboBox Grid.Column="0" Style="{StaticResource ComboBoxFlatStyle}" Height="30"
+                  ItemsSource="{Binding DsLopHoc}" 
+                  SelectedItem="{Binding SelectedLopHoc}" DisplayMemberPath="MaLop"/>
+
+                    <Button Grid.Column="1" Width="30" Height="30" Margin="5 0 0 0"
+                        Style="{StaticResource GridEditButton}" 
+                        ToolTip="Thêm lớp mới ngay lập tức"
+                        Click="BtnThemLopHocNhanh_Click">
+                        <Icon:PackIconMaterial Kind="Plus" Width="10" Height="10" />
+                    </Button>
+                </Grid>
             </StackPanel>
 
             <StackPanel Grid.Row="4" Orientation="Vertical">
-                <TextBlock Padding="8" Text="Môn học" FontFamily="13" Margin="12 0 10 0"
-                    Foreground="#868686" HorizontalAlignment="Left" VerticalAlignment="Center" />
-                <ComboBox Style="{StaticResource ComboBoxFlatStyle}" Width="560" Height="30" Margin="12 0 10 0"
-                   ItemsSource="{Binding DsMonHoc}" 
-                      SelectedItem="{Binding SelectedMonHoc}" DisplayMemberPath="TenMon"/>
-            </StackPanel>
-
-            <StackPanel Grid.Row="5" Orientation="Vertical">
-                <uc:MyTextBoxControl Text="{Binding ThoiGianLamBai}" Caption="Thời gian làm bài (phút)" />
-            </StackPanel>
-
-            <StackPanel Grid.Row="6" Orientation="Vertical">
-                <uc:MyTextBoxControl Text="{Binding SoLuongDe}" Caption="Số lượng đề" />
-            </StackPanel>
-
-            <StackPanel Grid.Row="7" Orientation="Vertical">
-                <uc:MyTextBoxControl Text="{Binding MaDeBatDau}" Caption="Mã đề bắt đầu" Hint="101" />
-            </StackPanel>
-
-            <StackPanel Grid.Row="8" Orientation="Vertical">
-                <uc:MyTextBoxControl Text="{Binding GhiChu}" Caption="Ghi chú" />
-            </StackPanel>
-
-            <StackPanel Grid.Row="9" Orientation="Vertical">
                 <TextBlock Padding="8" Text="Ma trận" FontFamily="13" Margin="12 0 10 0"
                     Foreground="#868686" HorizontalAlignment="Left" VerticalAlignment="Center" />
                 <ComboBox Style="{StaticResource ComboBoxFlatStyle}" Width="560" Height="30" Margin="12 0 10 0"
                    ItemsSource="{Binding DsMaTran}" 
-                      SelectedItem="{Binding SelectedMaTran}" DisplayMemberPath="Name"/>
+                      SelectedItem="{Binding SelectedMaTran}" 
+                          DisplayMemberPath="Name"
+                          SelectionChanged="CbbMaTran_SelectionChanged"/>
+            </StackPanel>
+
+            <StackPanel Grid.Row="5" Orientation="Vertical">
+                <TextBlock Padding="8" Text="Môn học (Tự động theo ma trận)" FontFamily="13" Margin="12 0 10 0"
+                    Foreground="#868686" HorizontalAlignment="Left" VerticalAlignment="Center" />
+                <ComboBox Style="{StaticResource ComboBoxFlatStyle}" Width="560" Height="30" Margin="12 0 10 0"
+                   ItemsSource="{Binding DsMonHoc}" 
+                      SelectedItem="{Binding SelectedMonHoc}" 
+                          DisplayMemberPath="TenMon"
+                          IsEnabled="False"/>
+            </StackPanel>
+
+            <StackPanel Grid.Row="6" Orientation="Vertical">
+                <uc:MyTextBoxControl Text="{Binding ThoiGianLamBai}" Caption="Thời gian làm bài (phút)" />
+            </StackPanel>
+
+            <StackPanel Grid.Row="7" Orientation="Vertical">
+                <uc:MyTextBoxControl Text="{Binding SoLuongDe}" Caption="Số lượng đề" />
+            </StackPanel>
+
+            <StackPanel Grid.Row="8" Orientation="Vertical">
+                <uc:MyTextBoxControl Text="{Binding MaDeBatDau}" Caption="Mã đề bắt đầu" Hint="101" />
+            </StackPanel>
+
+            <StackPanel Grid.Row="9" Orientation="Vertical">
+                <uc:MyTextBoxControl Text="{Binding GhiChu}" Caption="Ghi chú" />
             </StackPanel>
 
             <StackPanel Grid.Row="10" Orientation="Horizontal">
