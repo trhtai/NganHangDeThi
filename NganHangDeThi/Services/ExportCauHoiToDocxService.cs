@@ -21,7 +21,34 @@ public class ExportCauHoiToDocxService
 
         var body = mainPart.Document.Body;
 
-        // Tạo tag mở đầu câu hỏi
+        // Kiểm tra nếu là câu chùm (có danh sách con)
+        if (cauHoi.DsCauHoiCon != null && cauHoi.DsCauHoiCon.Any())
+        {
+            // 1. Mở thẻ <G> và nội dung cha
+            string rawParent = $"<G> {cauHoi.NoiDung}";
+            AppendTextWithImages(mainPart, body, rawParent, GetImagePath(cauHoi, imageBasePath));
+
+            // 2. Xuất các câu con
+            foreach (var child in cauHoi.DsCauHoiCon.OrderBy(c => c.Id))
+            {
+                ExportSingleQuestion(mainPart, body, child, imageBasePath);
+            }
+
+            // 3. Đóng thẻ </G>
+            body.Append(new Paragraph(new Run(new Text("</G>"))));
+        }
+        else
+        {
+            // Câu đơn bình thường
+            ExportSingleQuestion(mainPart, body, cauHoi, imageBasePath);
+        }
+
+        mainPart.Document.Save();
+    }
+
+    private void ExportSingleQuestion(MainDocumentPart mainPart, Body body, CauHoi cauHoi, string imageBasePath)
+    {
+        // Tạo tag mở đầu câu hỏi (NB, TH, VD, VDC)
         string prefix = cauHoi.Loai == LoaiCauHoi.TuLuan ? "<T" : "<";
         string tag = cauHoi.MucDo switch
         {
@@ -32,12 +59,12 @@ public class ExportCauHoiToDocxService
             _ => "<NB>"
         };
 
-        // Câu hỏi (nội dung + ảnh chèn đúng vị trí)
+        // Nếu muốn cố định câu hỏi con trong chùm, thêm <@>
+        // (Ở đây tạm thời chưa xử lý logic <@> cho câu hỏi, chỉ xử lý cho đáp án)
+
+        // Nội dung câu hỏi
         string rawNoiDung = $"{tag} {cauHoi.NoiDung}";
-        string? cauHoiImgPath = !string.IsNullOrWhiteSpace(cauHoi.HinhAnh)
-            ? Path.Combine(imageBasePath, cauHoi.HinhAnh)
-            : null;
-        AppendTextWithImages(mainPart, body, rawNoiDung, cauHoiImgPath);
+        AppendTextWithImages(mainPart, body, rawNoiDung, GetImagePath(cauHoi, imageBasePath));
 
         // Các đáp án
         foreach (var d in cauHoi.DsCauTraLoi.OrderBy(x => x.ViTriGoc))
@@ -46,16 +73,13 @@ public class ExportCauHoiToDocxService
             if (!d.DaoViTri) prefixAns += "<@>";
             string rawDapAn = $"{prefixAns} {d.NoiDung}";
 
-            string? dapAnImgPath = !string.IsNullOrWhiteSpace(d.HinhAnh)
-                ? Path.Combine(imageBasePath, d.HinhAnh)
-                : null;
-            AppendTextWithImages(mainPart, body, rawDapAn, dapAnImgPath);
+            AppendTextWithImages(mainPart, body, rawDapAn, GetImagePath(d, imageBasePath));
         }
     }
 
     private void AppendTextWithImages(MainDocumentPart mainPart, Body body, string input, string? imagePath)
     {
-        var parts = input.Split("<img>", StringSplitOptions.None);
+        var parts = input.Split(new[] { "<img>" }, StringSplitOptions.None);
 
         for (int i = 0; i < parts.Length; i++)
         {
@@ -85,6 +109,16 @@ public class ExportCauHoiToDocxService
                 body.Append(new Paragraph());
             }
         }
+    }
+
+    private string? GetImagePath(object entity, string basePath)
+    {
+        string? relativePath = null;
+        if (entity is CauHoi ch) relativePath = ch.HinhAnh;
+        else if (entity is CauTraLoi ctl) relativePath = ctl.HinhAnh;
+
+        if (string.IsNullOrWhiteSpace(relativePath)) return null;
+        return Path.Combine(basePath, relativePath);
     }
 
     private Drawing? CreateImageDrawing(MainDocumentPart mainPart, string imagePath)

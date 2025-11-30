@@ -100,7 +100,8 @@
                             </DataGridTextColumn.ElementStyle>
                         </DataGridTextColumn>
 
-                        <DataGridTextColumn Header="Mức độ" Binding="{Binding MucDo, Converter={StaticResource EnumDescriptionConverter}}" IsReadOnly="True" Width="auto" />
+                        <DataGridTextColumn Header="Mức độ" 
+                                            Binding="{Binding MucDo, Converter={StaticResource EnumDescriptionConverter}}" IsReadOnly="True" Width="auto" />
                         <DataGridTextColumn Header="Loại" Binding="{Binding Loai, Converter={StaticResource EnumDescriptionConverter}}" IsReadOnly="True" Width="auto" />
 
                         <DataGridTemplateColumn Header="Đáp án (Câu đơn)" Width="2*">
@@ -126,29 +127,38 @@
                     <DataGrid.RowDetailsTemplate>
                         <DataTemplate>
                             <Border Background="#F9F9F9" BorderBrush="#DDDDDD" BorderThickness="1" Margin="10,5" Padding="10"
-                    Visibility="{Binding LaCauChum, Converter={StaticResource BoolToVis}}">
+                Visibility="{Binding LaCauChum, Converter={StaticResource BoolToVis}}">
                                 <StackPanel>
                                     <TextBlock Text="DANH SÁCH CÂU HỎI CON:" FontWeight="Bold" Foreground="#4880FF" Margin="0,0,0,5"/>
 
                                     <DataGrid ItemsSource="{Binding CauHoiCon}" AutoGenerateColumns="False" CanUserAddRows="False" 
-                              BorderThickness="0" Background="Transparent" HeadersVisibility="Column">
+                          BorderThickness="0" Background="Transparent" HeadersVisibility="Column"
+                          Width="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=DataGrid}}">
+
                                         <DataGrid.Columns>
                                             <DataGridTextColumn Header="Câu hỏi con" 
-                                                Binding="{Binding NoiDung, Converter={StaticResource HtmlDisplayConverter}}" 
-                                                Width="*" IsReadOnly="True"/>
-                                            <DataGridTextColumn Header="Mức độ" Binding="{Binding MucDo}" Width="Auto" IsReadOnly="True"/>
+                                            Binding="{Binding NoiDung, Converter={StaticResource HtmlDisplayConverter}}" 
+                                            Width="*" IsReadOnly="True">
+                                                <DataGridTextColumn.ElementStyle>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="TextWrapping" Value="Wrap"/>
+                                                    </Style>
+                                                </DataGridTextColumn.ElementStyle>
+                                            </DataGridTextColumn>
 
-                                            <DataGridTemplateColumn Header="Đáp án" Width="Auto">
+                                            <DataGridTextColumn Header="Mức độ" Binding="{Binding MucDo, Converter={StaticResource EnumDescriptionConverter}}" Width="Auto" IsReadOnly="True"/>
+
+                                            <DataGridTemplateColumn Header="Đáp án" Width="2*">
                                                 <DataGridTemplateColumn.CellTemplate>
                                                     <DataTemplate>
                                                         <ItemsControl ItemsSource="{Binding DapAn}">
                                                             <ItemsControl.ItemTemplate>
                                                                 <DataTemplate>
-                                                                    <TextBlock>
-                        <Run Text="• "/>
-                        <Run Text="{Binding NoiDung, Converter={StaticResource HtmlDisplayConverter}}" 
-                             FontWeight="{Binding LaDapAnDung, Converter={StaticResource BoolToFontWeightConverter}}"
-                             Foreground="{Binding LaDapAnDung, Converter={StaticResource BoolToBrushConverter}}"/>
+                                                                    <TextBlock TextWrapping="Wrap">
+                                                    <Run Text="• "/>
+                                                    <Run Text="{Binding NoiDung, Converter={StaticResource HtmlDisplayConverter}}" 
+                                                         FontWeight="{Binding LaDapAnDung, Converter={StaticResource BoolToFontWeightConverter}}"
+                                                         Foreground="{Binding LaDapAnDung, Converter={StaticResource BoolToBrushConverter}}"/>
                                                                     </TextBlock>
                                                                 </DataTemplate>
                                                             </ItemsControl.ItemTemplate>

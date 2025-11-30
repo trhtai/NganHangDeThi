@@ -15,6 +15,7 @@
         <BooleanToVisibilityConverter x:Key="BoolToVis" />
         <local1:IndexConverter x:Key="IndexConverter" />
         <local1:EnumDescriptionConverter x:Key="EnumDescriptionConverter" />
+        <local1:HtmlDisplayConverter x:Key="HtmlDisplayConverter" />
     </UserControl.Resources>
 
     <Grid>
@@ -119,16 +120,31 @@
                   CellStyle="{DynamicResource DataGridCellStyle1}" 
                   Style="{DynamicResource DataGridStyle1}">
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="#" Binding="{Binding Id}" Visibility="Collapsed" IsReadOnly="True" CanUserResize="False" Width="auto" />
-                    <DataGridTextColumn Header="Nội dung" Binding="{Binding NoiDung}" IsReadOnly="True" Width="auto" />
+                    <DataGridTextColumn Header="#" 
+                                        Binding="{Binding Id}" 
+                                        Visibility="Collapsed" IsReadOnly="True" CanUserResize="False" Width="auto" />
+
+                    <DataGridTextColumn Header="Nội dung" 
+                                        Binding="{Binding NoiDung, Converter={StaticResource HtmlDisplayConverter}}" 
+                                        IsReadOnly="True" Width="*">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="TextWrapping" Value="Wrap" />
+                                <Setter Property="MaxHeight" Value="100" />
+                                <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+                                <Setter Property="Padding" Value="5"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+
                     <DataGridTextColumn Header="Mức độ" Binding="{Binding MucDo, Converter={StaticResource EnumDescriptionConverter}}" IsReadOnly="True" Width="auto" />
                     <DataGridTextColumn Header="Loại" Binding="{Binding Loai, Converter={StaticResource EnumDescriptionConverter}}" IsReadOnly="True" Width="auto" />
 
-                    <DataGridTemplateColumn Header="Thao tác" IsReadOnly="True" Width="*">
+                    <DataGridTemplateColumn Header="Thao tác" IsReadOnly="True" Width="Auto">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <StackPanel Orientation="Horizontal">
-                                    <Button Name="BtnSuaCauHoi" Click="BtnSuaCauHoi_Click" Style="{StaticResource GridEditButton}" Tag="{Binding}" ToolTip="Sửa" Margin="5 0 0 0">
+                                <StackPanel Orientation="Horizontal" Margin="10 0">
+                                    <Button Name="BtnSuaCauHoi" Click="BtnSuaCauHoi_Click" Style="{StaticResource GridEditButton}" Tag="{Binding}" ToolTip="Sửa" Margin="0 0 5 0">
                                         <Icon:PackIconMaterial Kind="PencilOffOutline" Style="{StaticResource GridButtonIcon}" />
                                     </Button>
                                     <Button Name="BtnXoaCauHoi" Click="BtnXoaCauHoi_Click" Style="{StaticResource GridRemoveButton}" Tag="{Binding}" ToolTip="Xóa" Margin="5 0 0 0">

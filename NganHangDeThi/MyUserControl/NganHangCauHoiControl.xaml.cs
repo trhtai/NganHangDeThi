@@ -82,107 +82,160 @@ public partial class NganHangCauHoiControl : UserControl, INotifyPropertyChanged
         }
     }
 
+    // --- Sửa hàm BtnSuaCauHoi_Click ---
     private void BtnSuaCauHoi_Click(object sender, RoutedEventArgs e)
     {
         if (sender is Button btn && btn.Tag is CauHoi cauHoi)
         {
-            // Lấy câu hỏi đầy đủ từ DB
+            // 1. Lấy câu hỏi đầy đủ từ DB (Bao gồm cả con và cháu)
             var full = _dbContext.CauHoi
                 .Include(x => x.DsCauTraLoi)
+                .Include(x => x.DsCauHoiCon)
+                    .ThenInclude(child => child.DsCauTraLoi) // Load đáp án của câu con
                 .FirstOrDefault(x => x.Id == cauHoi.Id);
 
-            if (full == null)
-            {
-                MessageBox.Show("Không tìm thấy câu hỏi.", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
+            if (full == null) { /* Báo lỗi... */ return; }
 
-            // Tạo thư mục tạm và file Word
+            // 2. Tạo file Word tạm
             string folder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TempDocs");
             Directory.CreateDirectory(folder);
             string filePath = Path.Combine(folder, $"CauHoi-{cauHoi.Id}.docx");
 
-            // Export ra file
+            // 3. Export
             var exporter = new ExportCauHoiToDocxService();
             var imagePath = App.AppHost!.Services.GetRequiredService<IOptions<ImageStorageOptions>>().Value.FolderPath;
             exporter.ExportToDocx(full, filePath, imagePath);
 
-            // Mở file
-            Process.Start(new ProcessStartInfo
-            {
-                FileName = filePath,
-                UseShellExecute = true
-            });
+            // 4. Mở file
+            Process.Start(new ProcessStartInfo { FileName = filePath, UseShellExecute = true });
 
-            // Hỏi người dùng có muốn cập nhật không
-            var result = MessageBox.Show(
-                "Sau khi chỉnh sửa xong file, bạn có muốn cập nhật lại câu hỏi trong hệ thống?",
-                "Cập nhật lại câu hỏi",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Question);
+            // 5. Hỏi xác nhận cập nhật
+            var result = MessageBox.Show("...", "Cập nhật lại câu hỏi", MessageBoxButton.YesNo, MessageBoxImage.Question);
 
             if (result == MessageBoxResult.Yes)
             {
                 try
                 {
-                    var updated = _questionExtractorService.ExtractQuestionsFromDocx(filePath).FirstOrDefault();
+                    // 6. Đọc lại file
+                    var updatedList = _questionExtractorService.ExtractQuestionsFromDocx(filePath);
+                    var updated = updatedList.FirstOrDefault();
+
                     if (updated != null)
                     {
+                        // 7. Gọi hàm cập nhật thông minh
                         CapNhatCauHoi(full.Id, updated);
                         _questionExtractorService.CommitImages();
 
-                        MessageBox.Show("Cập nhật thành công!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
+                        MessageBox.Show("Cập nhật thành công!", "Thông báo");
                         NapDsCauHoi();
                     }
                     else
                     {
-                        MessageBox.Show("Không tìm thấy nội dung hợp lệ trong file.", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        MessageBox.Show("File rỗng hoặc lỗi định dạng.", "Lỗi");
                     }
                 }
                 catch (Exception ex)
                 {
                     _questionExtractorService.CleanupTemporaryImages();
-                    MessageBox.Show($"Lỗi khi cập nhật: {ex.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show($"Lỗi: {ex.Message}", "Lỗi");
                 }
             }
         }
     }
 
-    private void CapNhatCauHoi(int cauHoiId, CauHoiRaw q)
+    // --- Viết lại hàm CapNhatCauHoi để xử lý đệ quy ---
+    private void CapNhatCauHoi(int cauHoiId, CauHoiRaw qNew)
     {
-        var cauHoiDb = _dbContext.CauHoi
+        // Load lại DB object (để đảm bảo tracking của EF)
+        var dbEntity = _dbContext.CauHoi
             .Include(x => x.DsCauTraLoi)
+            .Include(x => x.DsCauHoiCon)
+                .ThenInclude(x => x.DsCauTraLoi)
             .First(x => x.Id == cauHoiId);
 
-        var imagePath = App.AppHost!.Services.GetRequiredService<IOptions<ImageStorageOptions>>().Value.FolderPath;
+        var imageBasePath = App.AppHost!.Services.GetRequiredService<IOptions<ImageStorageOptions>>().Value.FolderPath;
 
-        // Xóa ảnh cũ
-        TryDeleteImage(cauHoiDb.HinhAnh, imagePath);
-        foreach (var da in cauHoiDb.DsCauTraLoi)
+        // 1. Cập nhật thông tin bản thân (Cha hoặc Đơn)
+        UpdateSingleQuestionData(dbEntity, qNew, imageBasePath);
+
+        // 2. Cập nhật danh sách câu con (nếu có)
+        // Chiến thuật: Đồng bộ theo Index (Con 1 update Con 1, Con 2 update Con 2...)
+        // Nếu file có nhiều con hơn -> Thêm mới.
+        // Nếu file có ít con hơn -> Xóa bớt (Cần check ràng buộc nếu câu con đã ra đề).
+
+        var dbChildren = dbEntity.DsCauHoiCon.OrderBy(x => x.Id).ToList();
+        var newChildren = qNew.CauHoiCon;
+
+        int maxCount = Math.Max(dbChildren.Count, newChildren.Count);
+
+        for (int i = 0; i < maxCount; i++)
         {
-            TryDeleteImage(da.HinhAnh, imagePath);
-        }
-
-        // Cập nhật câu hỏi
-        cauHoiDb.NoiDung = q.NoiDung;
-        cauHoiDb.MucDo = q.MucDo;
-        cauHoiDb.Loai = q.Loai;
-        cauHoiDb.HinhAnh = q.HinhAnh;
-        cauHoiDb.DsCauTraLoi.Clear();
-
-        foreach (var d in q.DapAn)
-        {
-            cauHoiDb.DsCauTraLoi.Add(new CauTraLoi
+            if (i < dbChildren.Count && i < newChildren.Count)
             {
-                NoiDung = d.NoiDung,
-                LaDapAnDung = d.LaDapAnDung,
-                ViTriGoc = d.ViTriGoc,
-                DaoViTri = d.DaoViTri,
-                HinhAnh = d.HinhAnh
-            });
+                // Trường hợp 1: Cả 2 đều có -> UPDATE
+                UpdateSingleQuestionData(dbChildren[i], newChildren[i], imageBasePath);
+            }
+            else if (i >= dbChildren.Count && i < newChildren.Count)
+            {
+                // Trường hợp 2: File có, DB chưa có -> ADD NEW CHILD
+                var newChildRaw = newChildren[i];
+                var newChildEntity = new CauHoi
+                {
+                    ParentId = dbEntity.Id, // Gắn vào cha
+                    ChuongId = dbEntity.ChuongId // Kế thừa chương của cha
+                };
+                UpdateSingleQuestionData(newChildEntity, newChildRaw, imageBasePath);
+                _dbContext.CauHoi.Add(newChildEntity);
+            }
+            else if (i < dbChildren.Count && i >= newChildren.Count)
+            {
+                // Trường hợp 3: DB có, File không có -> DELETE CHILD
+                // (Lưu ý: Nếu câu con đã được dùng trong đề thi, lệnh này sẽ lỗi do khóa ngoại.
+                // Tạm thời ta cho phép xóa, nếu lỗi EF sẽ throw exception ra ngoài để catch)
+                var childToDelete = dbChildren[i];
+
+                // Xóa ảnh của con trước
+                TryDeleteImage(childToDelete.HinhAnh, imageBasePath);
+                foreach (var ans in childToDelete.DsCauTraLoi) TryDeleteImage(ans.HinhAnh, imageBasePath);
+
+                _dbContext.CauHoi.Remove(childToDelete);
+            }
         }
 
         _dbContext.SaveChanges();
+    }
+
+    // Hàm helper để cập nhật dữ liệu 1 câu hỏi (không đệ quy)
+    private void UpdateSingleQuestionData(CauHoi dbEntity, CauHoiRaw rawData, string imageBasePath)
+    {
+        // Xóa ảnh cũ nếu có thay đổi ảnh
+        if (dbEntity.HinhAnh != rawData.HinhAnh)
+            TryDeleteImage(dbEntity.HinhAnh, imageBasePath);
+
+        dbEntity.NoiDung = rawData.NoiDung;
+        dbEntity.MucDo = rawData.MucDo;
+        dbEntity.Loai = rawData.Loai;
+        dbEntity.HinhAnh = rawData.HinhAnh;
+
+        // Cập nhật đáp án (Xóa hết cũ, thêm mới cho đơn giản và sạch sẽ)
+        // Lưu ý: Xóa đáp án không ảnh hưởng nhiều ràng buộc bằng xóa câu hỏi
+        foreach (var oldAns in dbEntity.DsCauTraLoi)
+        {
+            TryDeleteImage(oldAns.HinhAnh, imageBasePath);
+        }
+        dbEntity.DsCauTraLoi.Clear();
+
+        foreach (var ansRaw in rawData.DapAn)
+        {
+            dbEntity.DsCauTraLoi.Add(new CauTraLoi
+            {
+                NoiDung = ansRaw.NoiDung,
+                LaDapAnDung = ansRaw.LaDapAnDung,
+                ViTriGoc = ansRaw.ViTriGoc,
+                DaoViTri = ansRaw.DaoViTri,
+                HinhAnh = ansRaw.HinhAnh
+            });
+        }
     }
 
     private void TryDeleteImage(string? relativePath, string imageBaseFolder)

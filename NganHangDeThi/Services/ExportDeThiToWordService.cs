@@ -154,8 +154,11 @@ public static class ExportDeThiToWordService
                     insertAfter = body.InsertAfter(pDapAn, insertAfter);
                 }
 
-                insertAfter = body.InsertAfter(new Paragraph(new Run(new Text(""))), insertAfter);
+                //insertAfter = body.InsertAfter(new Paragraph(new Run(new Text(""))), insertAfter);
             }
+            // 3. SAU KHI HẾT NHÓM (Hết bài đọc hoặc hết câu lẻ) -> MỚI THÊM DÒNG TRỐNG LỚN
+            // Tạo khoảng cách rõ ràng giữa các nhóm câu hỏi
+            insertAfter = body.InsertAfter(new Paragraph(new Run(new Text(""))), insertAfter);
         }
 
         placeholderPara.Remove();
