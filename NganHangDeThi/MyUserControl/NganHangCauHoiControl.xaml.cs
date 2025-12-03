@@ -64,6 +64,24 @@ public partial class NganHangCauHoiControl : UserControl, INotifyPropertyChanged
         NapDsCauHoi();
     }
 
+    // Thêm hàm này vào class NganHangCauHoiControl
+    private void BtnThemThuCong_Click(object sender, RoutedEventArgs e)
+    {
+        // 1. Lấy instance của Window từ DI Container
+        var window = App.AppHost!.Services.GetRequiredService<ThemCauHoiThuCongWindow>();
+
+        // 2. Gán Owner để window hiện giữa màn hình cha
+        window.Owner = Window.GetWindow(this);
+
+        // 3. Hiển thị và chờ kết quả
+        // Nếu người dùng bấm "Lưu" (DialogResult == true), ta tải lại danh sách
+        if (window.ShowDialog() == true)
+        {
+            NapDsCauHoi();
+            // Có thể hiện thêm thông báo nhỏ nếu cần, dù trong Window đã có MessageBox rồi
+        }
+    }
+
     private void BtnTaiLaiCauHoi_Click(object sender, RoutedEventArgs e)
     {
         NapDsCauHoi();

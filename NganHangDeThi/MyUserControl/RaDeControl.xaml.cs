@@ -115,22 +115,32 @@ public partial class RaDeControl : UserControl, INotifyPropertyChanged
     {
         if (obj is not DeThi dt) return false;
 
-        // 1. Kiểm tra từ khóa
-        bool matchKeyword = true;
+        // 1. Kiểm tra Lớp học (Giữ nguyên)
+        if (LopHocLoc != null && dt.LopHocId != LopHocLoc.Id)
+            return false;
+
+        // 2. Tìm kiếm thông minh (Mới)
         if (!string.IsNullOrWhiteSpace(TuKhoaTimKiemDeThi))
         {
-            var keyword = TuKhoaTimKiemDeThi.ToLowerInvariant();
-            matchKeyword = dt.TieuDe?.Contains(keyword, StringComparison.OrdinalIgnoreCase) ?? false;
+            var k = TuKhoaTimKiemDeThi.Trim().ToLowerInvariant();
+
+            // Kiểm tra Tiêu đề
+            bool matchTieuDe = dt.TieuDe?.ToLowerInvariant().Contains(k) ?? false;
+
+            // Kiểm tra Mã đề (User gõ 101, 102...)
+            bool matchMaDe = dt.MaDe.ToString().Contains(k);
+
+            // Kiểm tra Kỳ thi (User gõ "Cuối kỳ", "Giữa kỳ")
+            bool matchKyThi = dt.KyThi?.ToLowerInvariant().Contains(k) ?? false;
+
+            // Kiểm tra Môn học (User gõ "Toán", "Văn") - Cần Include MonHoc khi load
+            bool matchMon = dt.MonHoc?.TenMon?.ToLowerInvariant().Contains(k) ?? false;
+
+            // Kết hợp: Chỉ cần khớp 1 trong các tiêu chí trên là hiện
+            return matchTieuDe || matchMaDe || matchKyThi || matchMon;
         }
 
-        // 2. [THÊM MỚI] Kiểm tra Lớp học
-        bool matchLopHoc = true;
-        if (LopHocLoc != null)
-        {
-            matchLopHoc = dt.LopHocId == LopHocLoc.Id;
-        }
-
-        return matchKeyword && matchLopHoc;
+        return true;
     }
 
     private void BtnXoaBoLoc_Click(object sender, RoutedEventArgs e)
@@ -141,7 +151,10 @@ public partial class RaDeControl : UserControl, INotifyPropertyChanged
 
     private List<DeThi> LayDsDeThi()
     {
-        return [.. _dbContext.DeThi.Include(x => x.MonHoc).Include(x => x.LopHoc)];
+        return [.. _dbContext.DeThi
+                .Include(x => x.MonHoc)
+                .Include(x => x.LopHoc)
+                .OrderByDescending(x => x.CreatedAt)];
     }
 
     private void BtnTaiLaiMaTran_Click(object sender, System.Windows.RoutedEventArgs e)

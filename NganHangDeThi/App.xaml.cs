@@ -46,6 +46,8 @@ public partial class App : Application
                 service.AddTransient<ThemCauHoiTuFileWindow>();
                 service.AddTransient<QuestionExtractorService>();
 
+                service.AddTransient<ThemCauHoiThuCongWindow>();
+
                 service.AddScoped<RaDeControl>();
                 service.AddScoped<NganHangCauHoiControl>();
                 service.AddScoped<QuanTriHeThongControl>();

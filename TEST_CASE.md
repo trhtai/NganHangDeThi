@@ -36,7 +36,27 @@ từ đó đề xuất cho user nhập số lượng câu điền khuyết dựa
 	+ thêm môn và chương khi thêm ma trận
     + thêm lớp khi tạo đề thi 
     + thêm môn và chương khi thêm câu hỏi từ file
-
-15. Có đề gốc, sau đó sinh các đề con từ đề gốc
+	
+15. Xuất đáp án dạng bảng
+16. Có đề gốc, sau đó sinh các đề con từ đề gốc
 	+ lưu lại đề con 
-	+ câpj nhật đề gốc -> sinh đề con -> cập nhật đề con
+	+ câpj nhật đề gốc -> sinh đề con -> cập nhật đề con (HƠI VÔ LÍ)
+	+ Có 2 loại đề: 
+		- đề chỉ 1 bộ câu hỏi và trộn thứ tự các mã đề
+		- mỗi mã đề có 1 bộ câu hỏi riêng biệt (TẠM THỜI BỎ QUA): user có thể tạo 4 đề riêng lẻ
+17. Thêm câu hỏi thủ công
+	+ loại bỏ việc thêm ảnh
+	+ style lại
+	
+18. (FIXED) Làm sao để tìm đề thi 1 cách nhanh chóng
+	+ search thông minh hơn (FilterDeThi)
+	+ sắp xếp danh sách đề thi theo ngày tạo
+19. (FIXED) Xem lại định dạng bold khi xuất đề thi
+	+ Khi xuất đềthi thì định dạng bold bị mất, nhưng nếu giữ lai thì bị ghi đè lên đáp án,...
+	+ Không thể sửa vì là lỗi trong word
+
+20. Ngăn tạo trùng chương: hiện tại có thể thêm 2 chương 1
+21. Style lại nút "thêm câu hỏi thủ công"
+22. Chỉnh lại thông báo khi "thêm câu hỏi từ file", khi thêm thành công cần thông báo chính xác số câu hỏi,
+cần đếm các câu đơn và các câu hỏi con trong câu chùm, không đếm phần giả thuyết
+23. KHi sửa câu hỏi, nội dung show lên chưa được tô đỏ mà hiển thị "<$*> <span style='color:red'> although</span>"
