@@ -239,7 +239,7 @@ public partial class ThemCauHoiTuFileWindow : Window, INotifyPropertyChanged
             return;
         }
 
-        var window = new ThemChuongWindow(MonHocDangChon.Id)
+        var window = new ThemChuongWindow(_db, MonHocDangChon.Id)
         {
             Owner = this
         };

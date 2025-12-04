@@ -53,10 +53,10 @@ từ đó đề xuất cho user nhập số lượng câu điền khuyết dựa
 	+ sắp xếp danh sách đề thi theo ngày tạo
 19. (FIXED) Xem lại định dạng bold khi xuất đề thi
 	+ Khi xuất đềthi thì định dạng bold bị mất, nhưng nếu giữ lai thì bị ghi đè lên đáp án,...
-	+ Không thể sửa vì là lỗi trong word
+	+ Không thể sửa vì là lỗi trong word, 1 phần do thư viện docx không hỗ trợ tốt
 
-20. Ngăn tạo trùng chương: hiện tại có thể thêm 2 chương 1
-21. Style lại nút "thêm câu hỏi thủ công"
-22. Chỉnh lại thông báo khi "thêm câu hỏi từ file", khi thêm thành công cần thông báo chính xác số câu hỏi,
+20. (FIXED) Ngăn tạo trùng chương: hiện tại có thể thêm 2 chương 1
+21. (FIXED) Style lại nút "thêm câu hỏi thủ công"
+22. (FIXED) Chỉnh lại thông báo khi "thêm câu hỏi từ file", khi thêm thành công cần thông báo chính xác số câu hỏi,
 cần đếm các câu đơn và các câu hỏi con trong câu chùm, không đếm phần giả thuyết
-23. KHi sửa câu hỏi, nội dung show lên chưa được tô đỏ mà hiển thị "<$*> <span style='color:red'> although</span>"
+23. (FIXED) KHi sửa câu hỏi, nội dung show lên chưa được tô đỏ mà hiển thị "<$*> <span style='color:red'> although</span>"

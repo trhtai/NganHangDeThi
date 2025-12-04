@@ -43,7 +43,7 @@ public partial class QuanLyChuongWindow : Window, INotifyPropertyChanged
 
     private void BtnThemChuong_Click(object sender, RoutedEventArgs e)
     {
-        var themChuong = new ThemChuongWindow(MonHoc!.Id)
+        var themChuong = new ThemChuongWindow(_db, MonHoc!.Id)
         {
             Owner = Window.GetWindow(this)
         };
@@ -61,7 +61,7 @@ public partial class QuanLyChuongWindow : Window, INotifyPropertyChanged
     {
         if (sender is Button btn && btn.Tag is Chuong chuong)
         {
-            var suaWindow = new ThemChuongWindow(MonHoc!.Id, chuong)
+            var suaWindow = new ThemChuongWindow(_db, MonHoc!.Id, chuong)
             {
                 Owner = Window.GetWindow(this)
             };

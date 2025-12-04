@@ -399,7 +399,9 @@ public class QuestionExtractorService
         _dbContext.CauHoi.Add(entity);
         _dbContext.SaveChanges();
 
-        int savedCount = 1;
+        // Nếu là câu chùm (có con) thì không tính câu cha (savedCount = 0), ngược lại tính là 1
+        int savedCount = qRaw.CauHoiCon.Any() ? 0 : 1;
+
         if (qRaw.CauHoiCon.Any())
         {
             foreach (var child in qRaw.CauHoiCon)
@@ -407,6 +409,7 @@ public class QuestionExtractorService
                 savedCount += SaveQuestionRecursive(child, chuongId, entity.Id);
             }
         }
+
         return savedCount;
     }
 

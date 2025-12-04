@@ -280,7 +280,7 @@ public partial class ThemHoacSuaMaTranWindow : Window, INotifyPropertyChanged
             return;
         }
 
-        var window = new ThemChuongWindow(monHocDangChon.Id)
+        var window = new ThemChuongWindow(_db, monHocDangChon.Id)
         {
             Owner = this
         };

@@ -14,7 +14,7 @@ public static class HtmlToWordHelper
 {
     private static readonly Regex _tokenRegex = new Regex(@"(<[^>]+>)|(\{\{IMG:[^}]+\}\})|([^<{}]+)", RegexOptions.Compiled);
 
-    public static List<OpenXmlElement> ConvertHtmlToElements(MainDocumentPart mainPart, string html, string imageBasePath, bool ignoreColor = false)
+    public static List<OpenXmlElement> ConvertHtmlToElements(MainDocumentPart mainPart, string html, string imageBasePath, bool ignoreColor = false, bool enableBold = false)
     {
         var elements = new List<OpenXmlElement>();
         if (string.IsNullOrWhiteSpace(html)) return elements;
@@ -22,8 +22,8 @@ public static class HtmlToWordHelper
         string decodedHtml = WebUtility.HtmlDecode(html);
         var matches = _tokenRegex.Matches(decodedHtml);
 
-        // Các cờ định dạng
-        // bool isBold = false; // -> Đã vô hiệu hóa Bold
+        // Các biến cờ để theo dõi trạng thái thẻ HTML
+        bool isBold = false;
         bool isItalic = false;
         bool isUnderline = false;
         bool isSub = false;
@@ -38,24 +38,29 @@ public static class HtmlToWordHelper
             {
                 string lowerTag = token.ToLowerInvariant();
 
-                // --- ĐÃ VÔ HIỆU HÓA BẮT THẺ BOLD ---
-                // if (lowerTag.Contains("<b>") || lowerTag.Contains("<strong>")) isBold = true;
-                // else if (lowerTag.Contains("</b>") || lowerTag.Contains("</strong>")) isBold = false;
+                // Vẫn theo dõi thẻ <b> để biết cấu trúc, nhưng việc áp dụng sẽ do biến enableBold quyết định
+                if (lowerTag.Contains("<b>") || lowerTag.Contains("<strong>")) isBold = true;
+                else if (lowerTag.Contains("</b>") || lowerTag.Contains("</strong>")) isBold = false;
 
                 if (lowerTag.Contains("<i>") || lowerTag.Contains("<em>")) isItalic = true;
                 else if (lowerTag.Contains("</i>") || lowerTag.Contains("</em>")) isItalic = false;
-                else if (lowerTag.Contains("<u>")) isUnderline = true;
+
+                if (lowerTag.Contains("<u>")) isUnderline = true;
                 else if (lowerTag.Contains("</u>")) isUnderline = false;
-                else if (lowerTag.Contains("<sub>")) isSub = true;
+
+                if (lowerTag.Contains("<sub>")) isSub = true;
                 else if (lowerTag.Contains("</sub>")) isSub = false;
-                else if (lowerTag.Contains("<sup>")) isSup = true;
+
+                if (lowerTag.Contains("<sup>")) isSup = true;
                 else if (lowerTag.Contains("</sup>")) isSup = false;
-                else if (lowerTag.Contains("color:red") || lowerTag.Contains("color: red"))
+
+                if (lowerTag.Contains("color:red") || lowerTag.Contains("color: red"))
                 {
                     if (!ignoreColor) isRed = true;
                 }
                 else if (lowerTag.Contains("</span>")) isRed = false;
-                else if (lowerTag.Contains("<br>") || lowerTag.Contains("<br/>"))
+
+                if (lowerTag.Contains("<br>") || lowerTag.Contains("<br/>"))
                 {
                     elements.Add(new Run(new Break()));
                 }
@@ -68,13 +73,25 @@ public static class HtmlToWordHelper
             }
             else if (match.Groups[3].Success) // Text
             {
+                if (string.IsNullOrWhiteSpace(token) && token.Contains("\n")) continue;
+
                 var run = new Run(new Text(token) { Space = SpaceProcessingModeValues.Preserve });
                 var props = new RunProperties();
 
-                // --- CHỐT: LUÔN LUÔN TẮT IN ĐẬM ---
-                // Dùng OnOffValue(false) để sinh mã XML <w:b val="0"/> -> Ép buộc tắt Bold
-                props.Bold = new Bold { Val = false };
-                props.BoldComplexScript = new BoldComplexScript { Val = false };
+                // --- XỬ LÝ TẮT BOLD TRIỆT ĐỂ ---
+                if (enableBold)
+                {
+                    // Nếu bật, dùng giá trị từ thẻ HTML
+                    props.Bold = new Bold { Val = isBold };
+                    props.BoldComplexScript = new BoldComplexScript { Val = isBold };
+                }
+                else
+                {
+                    // Nếu tắt, LUÔN LUÔN set giá trị False
+                    // Điều này ngăn chặn việc Word kế thừa định dạng từ Run trước đó
+                    props.Bold = new Bold { Val = false };
+                    props.BoldComplexScript = new BoldComplexScript { Val = false };
+                }
 
                 if (isItalic)
                 {
@@ -88,7 +105,6 @@ public static class HtmlToWordHelper
                 if (isSub) { props.VerticalTextAlignment = new VerticalTextAlignment { Val = VerticalPositionValues.Subscript }; }
                 if (isSup) { props.VerticalTextAlignment = new VerticalTextAlignment { Val = VerticalPositionValues.Superscript }; }
 
-                // Font chữ & Cỡ chữ
                 props.RunFonts = new RunFonts { Ascii = "Times New Roman", HighAnsi = "Times New Roman", ComplexScript = "Times New Roman" };
                 props.FontSize = new FontSize { Val = "24" };
                 props.FontSizeComplexScript = new FontSizeComplexScript { Val = "24" };
@@ -101,6 +117,7 @@ public static class HtmlToWordHelper
         return elements;
     }
 
+    // Hàm CreateImageDrawing và GetImagePartType giữ nguyên như cũ
     public static Drawing? CreateImageDrawing(MainDocumentPart mainPart, string imagePath)
     {
         if (!File.Exists(imagePath)) return null;

@@ -3,6 +3,7 @@ using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 using NganHangDeThi.Common.Enum;
 using NganHangDeThi.Data.Entity;
+using NganHangDeThi.Helpers;
 using System.IO;
 using A = DocumentFormat.OpenXml.Drawing;
 using DW = DocumentFormat.OpenXml.Drawing.Wordprocessing;
@@ -21,12 +22,12 @@ public class ExportCauHoiToDocxService
 
         var body = mainPart.Document.Body;
 
-        // Kiểm tra nếu là câu chùm (có danh sách con)
+        // Kiểm tra nếu là câu chùm
         if (cauHoi.DsCauHoiCon != null && cauHoi.DsCauHoiCon.Any())
         {
-            // 1. Mở thẻ <G> và nội dung cha
-            string rawParent = $"<G> {cauHoi.NoiDung}";
-            AppendTextWithImages(mainPart, body, rawParent, GetImagePath(cauHoi, imageBasePath));
+            // 1. Xuất nội dung cha <G>
+            // Tách thẻ <G> ra để nó không bị coi là HTML cần render, giữ nguyên text để import lại sau này
+            AppendQuestionPart(mainPart, body, "<G> ", cauHoi.NoiDung, cauHoi.HinhAnh, imageBasePath);
 
             // 2. Xuất các câu con
             foreach (var child in cauHoi.DsCauHoiCon.OrderBy(c => c.Id))
@@ -59,144 +60,53 @@ public class ExportCauHoiToDocxService
             _ => "<NB>"
         };
 
-        // Nếu muốn cố định câu hỏi con trong chùm, thêm <@>
-        // (Ở đây tạm thời chưa xử lý logic <@> cho câu hỏi, chỉ xử lý cho đáp án)
+        // 1. Xuất câu hỏi (Tag + Nội dung HTML đã render)
+        AppendQuestionPart(mainPart, body, tag + " ", cauHoi.NoiDung, cauHoi.HinhAnh, imageBasePath);
 
-        // Nội dung câu hỏi
-        string rawNoiDung = $"{tag} {cauHoi.NoiDung}";
-        AppendTextWithImages(mainPart, body, rawNoiDung, GetImagePath(cauHoi, imageBasePath));
-
-        // Các đáp án
+        // 2. Các đáp án
         foreach (var d in cauHoi.DsCauTraLoi.OrderBy(x => x.ViTriGoc))
         {
-            string prefixAns = d.LaDapAnDung ? "<$*>" : "<$>";
-            if (!d.DaoViTri) prefixAns += "<@>";
-            string rawDapAn = $"{prefixAns} {d.NoiDung}";
+            string prefixAns = d.LaDapAnDung ? "<$*> " : "<$> ";
+            if (!d.DaoViTri) prefixAns = prefixAns.Trim() + "<@> ";
 
-            AppendTextWithImages(mainPart, body, rawDapAn, GetImagePath(d, imageBasePath));
+            AppendQuestionPart(mainPart, body, prefixAns, d.NoiDung, d.HinhAnh, imageBasePath);
         }
     }
 
-    private void AppendTextWithImages(MainDocumentPart mainPart, Body body, string input, string? imagePath)
+    // Hàm helper mới: Tách biệt Tag hệ thống và Nội dung HTML
+    private void AppendQuestionPart(MainDocumentPart mainPart, Body body, string prefixTag, string htmlContent, string? entityImagePath, string imageBasePath)
     {
-        var parts = input.Split(new[] { "<img>" }, StringSplitOptions.None);
+        var para = new Paragraph();
 
-        for (int i = 0; i < parts.Length; i++)
+        // 1. Thêm Tag (Ví dụ: <NB>, <$>) dưới dạng Text thuần
+        // Dùng SpaceProcessingModeValues.Preserve để giữ khoảng trắng sau tag
+        var runTag = new Run(new Text(prefixTag) { Space = SpaceProcessingModeValues.Preserve });
+
+        // Font cho Tag (Times New Roman 12pt)
+        runTag.RunProperties = new RunProperties(
+            new RunFonts { Ascii = "Times New Roman", HighAnsi = "Times New Roman" },
+            new FontSize { Val = "24" }
+        );
+        para.Append(runTag);
+
+        // 2. Convert nội dung HTML sang Word Elements (Giữ in đậm, màu sắc...)
+        // Bật enableBold = true để hiển thị đúng thẻ <b>
+        var contentElements = HtmlToWordHelper.ConvertHtmlToElements(mainPart, htmlContent, imageBasePath, ignoreColor: false, enableBold: false);
+        para.Append(contentElements);
+
+        body.Append(para);
+
+        // 3. Chèn ảnh (nếu có) vào đoạn văn riêng ngay bên dưới
+        if (!string.IsNullOrWhiteSpace(entityImagePath))
         {
-            string textPart = parts[i].Trim();
+            string fullPath = Path.Combine(imageBasePath, entityImagePath);
+            var drawing = HtmlToWordHelper.CreateImageDrawing(mainPart, fullPath);
 
-            if (!string.IsNullOrWhiteSpace(textPart))
+            if (drawing != null)
             {
-                var para = new Paragraph(new Run(new Text(textPart)));
-                body.Append(para);
-            }
-
-            // Nếu còn <img> sau đoạn này thì chèn ảnh
-            if (i < parts.Length - 1 && !string.IsNullOrWhiteSpace(imagePath))
-            {
-                // 1. Dòng trống trước ảnh
-                body.Append(new Paragraph());
-
-                // 2. Dòng ảnh
-                var drawing = CreateImageDrawing(mainPart, imagePath);
-                if (drawing != null)
-                {
-                    var imgPara = new Paragraph(new Run(drawing));
-                    body.Append(imgPara);
-                }
-
-                // 3. Dòng trống sau ảnh
-                body.Append(new Paragraph());
+                var imgPara = new Paragraph(new Run(drawing));
+                body.Append(imgPara);
             }
         }
-    }
-
-    private string? GetImagePath(object entity, string basePath)
-    {
-        string? relativePath = null;
-        if (entity is CauHoi ch) relativePath = ch.HinhAnh;
-        else if (entity is CauTraLoi ctl) relativePath = ctl.HinhAnh;
-
-        if (string.IsNullOrWhiteSpace(relativePath)) return null;
-        return Path.Combine(basePath, relativePath);
-    }
-
-    private Drawing? CreateImageDrawing(MainDocumentPart mainPart, string imagePath)
-    {
-        if (!File.Exists(imagePath)) return null;
-
-        ImagePartType imageType = GetImagePartType(imagePath);
-        ImagePart imagePart = mainPart.AddImagePart(imageType);
-
-        using FileStream stream = new FileStream(imagePath, FileMode.Open, FileAccess.Read);
-        imagePart.FeedData(stream);
-
-        string imagePartId = mainPart.GetIdOfPart(imagePart);
-
-        return new Drawing(
-            new DW.Inline(
-                new DW.Extent { Cx = 990000L, Cy = 792000L }, // kích thước ảnh
-                new DW.EffectExtent
-                {
-                    LeftEdge = 0L,
-                    TopEdge = 0L,
-                    RightEdge = 0L,
-                    BottomEdge = 0L
-                },
-                new DW.DocProperties
-                {
-                    Id = (UInt32Value)1U,
-                    Name = Path.GetFileName(imagePath)
-                },
-                new DW.NonVisualGraphicFrameDrawingProperties(
-                    new A.GraphicFrameLocks { NoChangeAspect = true }),
-                new A.Graphic(
-                    new A.GraphicData(
-                        new PIC.Picture(
-                            new PIC.NonVisualPictureProperties(
-                                new PIC.NonVisualDrawingProperties
-                                {
-                                    Id = 0U,
-                                    Name = Path.GetFileName(imagePath)
-                                },
-                                new PIC.NonVisualPictureDrawingProperties()),
-                            new PIC.BlipFill(
-                                new A.Blip
-                                {
-                                    Embed = imagePartId,
-                                    CompressionState = A.BlipCompressionValues.Print
-                                },
-                                new A.Stretch(new A.FillRectangle())),
-                            new PIC.ShapeProperties(
-                                new A.Transform2D(
-                                    new A.Offset { X = 0L, Y = 0L },
-                                    new A.Extents { Cx = 990000L, Cy = 792000L }),
-                                new A.PresetGeometry(new A.AdjustValueList())
-                                { Preset = A.ShapeTypeValues.Rectangle })
-                        ))
-                    { Uri = "http://schemas.openxmlformats.org/drawingml/2006/picture" })
-            )
-            {
-                DistanceFromTop = 0U,
-                DistanceFromBottom = 0U,
-                DistanceFromLeft = 0U,
-                DistanceFromRight = 0U
-            });
-    }
-
-    private ImagePartType GetImagePartType(string? path)
-    {
-        if (string.IsNullOrWhiteSpace(path))
-            return ImagePartType.Jpeg;
-
-        var ext = Path.GetExtension(path).ToLowerInvariant();
-        return ext switch
-        {
-            ".png" => ImagePartType.Png,
-            ".jpg" or ".jpeg" => ImagePartType.Jpeg,
-            ".gif" => ImagePartType.Gif,
-            ".bmp" => ImagePartType.Bmp,
-            _ => ImagePartType.Jpeg
-        };
     }
 }
