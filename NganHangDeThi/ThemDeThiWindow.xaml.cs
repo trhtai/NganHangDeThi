@@ -96,36 +96,37 @@ public partial class ThemDeThiWindow : Window, INotifyPropertyChanged
             return;
         }
 
-        // 2. Load cấu trúc ma trận và GOM NHÓM ĐỂ TRÁNH TRÙNG LẶP
-        // Lỗi 40 câu thường do DB lưu nhiều dòng chi tiết ma trận giống nhau
+        // 2. Load cấu trúc ma trận và GOM NHÓM
         var rawChiTietMaTrans = _dbContext.ChiTietMaTran
             .Include(ct => ct.Chuong)
             .Where(ct => ct.MaTranId == SelectedMaTran.Id)
             .ToList();
 
         // Group by để gộp các dòng trùng chương/mức độ/loại
+        // CHANGE: Thêm OrderBy Min(Id) để giữ thứ tự các phần như người dùng đã nhập trong Ma trận
         var chiTietMaTrans = rawChiTietMaTrans
             .GroupBy(x => new { x.ChuongId, x.MucDoCauHoi, x.LoaiCauHoi })
             .Select(g => new
             {
+                FirstId = g.Min(item => item.Id), // Lấy Id nhỏ nhất để sắp xếp
                 ChuongId = g.Key.ChuongId,
-                TenChuong = g.First().Chuong.TenChuong, // Lấy tên chương để hiển thị lỗi nếu cần
+                TenChuong = g.First().Chuong.TenChuong,
                 MucDoCauHoi = g.Key.MucDoCauHoi,
                 LoaiCauHoi = g.Key.LoaiCauHoi,
-                SoCau = g.Sum(x => x.SoCau) // Cộng dồn số câu nếu có nhiều dòng
+                SoCau = g.Sum(x => x.SoCau)
             })
+            .OrderBy(x => x.FirstId) // <--- CHANGE: Giữ thứ tự cấu trúc đề thi
             .ToList();
 
-        // 3. Load kho câu hỏi (Sử dụng AsSplitQuery để tránh nhân bản dữ liệu do Cartesian Product)
+        // 3. Load kho câu hỏi
         var khoCauHoi = _dbContext.CauHoi
-            .AsSplitQuery() // <-- QUAN TRỌNG: Ngăn chặn nhân bản dữ liệu khi Include nhiều bảng con
+            .AsSplitQuery()
             .Include(c => c.DsCauTraLoi)
             .Include(c => c.DsCauHoiCon).ThenInclude(child => child.DsCauTraLoi)
-            .Where(c => c.ParentId == null && c.Chuong.MonHocId == SelectedMonHoc.Id) // Thêm lọc theo môn cho chắc chắn
+            .Where(c => c.ParentId == null && c.Chuong.MonHocId == SelectedMonHoc.Id)
             .ToList();
 
         var rand = new Random();
-        // Sử dụng HashSet để đảm bảo tính duy nhất tuyệt đối theo Id
         var selectedQuestionIds = new HashSet<int>();
         var boCauHoiGoc = new List<CauHoi>();
 
@@ -137,8 +138,8 @@ public partial class ThemDeThiWindow : Window, INotifyPropertyChanged
                 .Where(c => c.MucDo == ct.MucDoCauHoi &&
                             c.Loai == ct.LoaiCauHoi &&
                             c.ChuongId == ct.ChuongId &&
-                            !selectedQuestionIds.Contains(c.Id)) // Kiểm tra trùng bằng ID
-                .OrderBy(x => rand.Next())
+                            !selectedQuestionIds.Contains(c.Id))
+                .OrderBy(x => rand.Next()) // Trộn ngẫu nhiên candidates
                 .ToList();
 
             int daChon = 0;
@@ -147,11 +148,10 @@ public partial class ThemDeThiWindow : Window, INotifyPropertyChanged
                 if (daChon >= ct.SoCau) break;
 
                 // Tính trọng số: Nếu là câu chùm thì đếm số câu con, câu đơn tính là 1
-                // Cần đảm bảo DsCauHoiCon không null
                 int soCauCon = (cau.DsCauHoiCon != null && cau.DsCauHoiCon.Any()) ? cau.DsCauHoiCon.Count : 0;
                 int trongSo = soCauCon > 0 ? soCauCon : 1;
 
-                // Kiểm tra: Nếu thêm câu này vào mà vượt quá số lượng yêu cầu thì bỏ qua (trừ khi chưa chọn được câu nào)
+                // Kiểm tra: Nếu thêm câu này vào mà không vượt quá số lượng yêu cầu
                 if (daChon + trongSo <= ct.SoCau)
                 {
                     boCauHoiGoc.Add(cau);
@@ -163,16 +163,29 @@ public partial class ThemDeThiWindow : Window, INotifyPropertyChanged
             // Nếu không đủ câu hỏi
             if (daChon < ct.SoCau)
             {
-                MessageBox.Show($"Thiếu dữ liệu! Chương '{ct.TenChuong}' - {ct.MucDoCauHoi}.\nCần: {ct.SoCau} câu.\nTìm được: {daChon} câu.",
-                    "Cảnh báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                // CHANGE: Thông báo rõ ràng hơn
+                MessageBox.Show($"Không đủ câu hỏi phù hợp cho:\nChương: {ct.TenChuong}\nMức độ: {ct.MucDoCauHoi}\n\n" +
+                    $"Yêu cầu: {ct.SoCau} câu.\nTìm được: {daChon} câu.\n\n" +
+                    "Nguyên nhân có thể: Kho câu hỏi hết hoặc các câu chùm còn lại có số lượng câu con lớn hơn số lượng cần lấy.",
+                    "Thiếu dữ liệu", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
         }
 
-        // Đánh dấu đã ra đề
-        foreach (var q in boCauHoiGoc) q.DaRaDe = true;
+        // Đánh dấu đã ra đề (CHANGE: Đánh dấu cả câu con)
+        foreach (var q in boCauHoiGoc)
+        {
+            q.DaRaDe = true;
+            if (q.DsCauHoiCon != null)
+            {
+                foreach (var child in q.DsCauHoiCon)
+                {
+                    child.DaRaDe = true; // <--- CHANGE: Đánh dấu câu con
+                }
+            }
+        }
 
-        // 5. SINH CÁC MÃ ĐỀ (Logic giữ nguyên nhưng thêm kiểm tra null)
+        // 5. SINH CÁC MÃ ĐỀ
         var createTime = DateTime.Now;
 
         for (int i = 0; i < SoLuongDe; i++)
@@ -202,16 +215,20 @@ public partial class ThemDeThiWindow : Window, INotifyPropertyChanged
             }
             else
             {
+                // CHANGE: Khi trộn đề, ta trộn toàn bộ danh sách câu hỏi đã chọn.
+                // Lưu ý: Việc này sẽ làm mất cấu trúc Chương/Phần (vd: Phần I Chương 1, Phần II Chương 2)
+                // Nếu muốn giữ cấu trúc, cần logic phức tạp hơn (trộn trong từng nhóm chi tiết ma trận).
+                // Với yêu cầu hiện tại, trộn toàn bộ là ok.
                 dsCauHoiCuaDe = boCauHoiGoc.OrderBy(x => rand.Next()).ToList();
             }
 
             foreach (var ch in dsCauHoiCuaDe)
             {
                 var listCauHoiCanXuLy = new List<CauHoi>();
-                // Kiểm tra kỹ null trước khi truy cập
+                // Nếu là câu chùm, lấy các câu con ra để tạo chi tiết đề thi
                 if (ch.DsCauHoiCon != null && ch.DsCauHoiCon.Count > 0)
                 {
-                    listCauHoiCanXuLy.AddRange(ch.DsCauHoiCon.OrderBy(x => x.Id));
+                    listCauHoiCanXuLy.AddRange(ch.DsCauHoiCon.OrderBy(x => x.Id)); // Giữ thứ tự câu con trong bài đọc
                 }
                 else
                 {
@@ -225,7 +242,10 @@ public partial class ThemDeThiWindow : Window, INotifyPropertyChanged
                     if (!laDeGoc && ChoPhepTronDapAn)
                     {
                         var dapAnDuocTron = qSub.DsCauTraLoi.Where(d => d.DaoViTri).OrderBy(_ => rand.Next()).ToList();
-                        var dapAnCoDinh = qSub.DsCauTraLoi.Where(d => !d.DaoViTri).ToList();
+
+                        // CHANGE: Sắp xếp các đáp án cố định theo vị trí gốc (đề phòng trường hợp lỗi thứ tự)
+                        var dapAnCoDinh = qSub.DsCauTraLoi.Where(d => !d.DaoViTri).OrderBy(d => d.ViTriGoc).ToList();
+
                         dapAnDaXuLy = dapAnDuocTron.Concat(dapAnCoDinh).ToList();
                     }
                     else
