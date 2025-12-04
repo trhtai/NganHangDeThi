@@ -90,105 +90,145 @@ public partial class ThemDeThiWindow : Window, INotifyPropertyChanged
     private void BtnTao_Click(object sender, RoutedEventArgs e)
     {
         // 1. Validate dữ liệu
-        if (SoLuongDe <= 0 || MaDeBatDau <= 0 || SelectedMaTran == null || SelectedMonHoc == null || SelectedLopHoc == null || ThoiGianLamBai <= 0)
+        // Vì đã fix binding ở bước 1, ta có thể dùng trực tiếp các biến Property
+        if (SoLuongDe <= 0 || MaDeBatDau <= 0 || SelectedMaTran == null || SelectedMonHoc == null || SelectedLopHoc == null)
         {
-            MessageBox.Show("Vui lòng nhập đầy đủ thông tin!", "Thiếu thông tin", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show("Vui lòng kiểm tra lại thông tin (Số lượng, Môn, Lớp...)", "Thiếu thông tin", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
 
-        // 2. Load cấu trúc ma trận và GOM NHÓM
+        // 2. Load cấu trúc ma trận (Gom nhóm để giữ thứ tự Chương/Phần)
         var rawChiTietMaTrans = _dbContext.ChiTietMaTran
             .Include(ct => ct.Chuong)
             .Where(ct => ct.MaTranId == SelectedMaTran.Id)
             .ToList();
 
-        // Group by để gộp các dòng trùng chương/mức độ/loại
-        // CHANGE: Thêm OrderBy Min(Id) để giữ thứ tự các phần như người dùng đã nhập trong Ma trận
-        var chiTietMaTrans = rawChiTietMaTrans
+        var cauTrucDeThi = rawChiTietMaTrans
             .GroupBy(x => new { x.ChuongId, x.MucDoCauHoi, x.LoaiCauHoi })
             .Select(g => new
             {
-                FirstId = g.Min(item => item.Id), // Lấy Id nhỏ nhất để sắp xếp
+                FirstId = g.Min(item => item.Id), // Dùng ID này để sort giữ thứ tự hiển thị
                 ChuongId = g.Key.ChuongId,
                 TenChuong = g.First().Chuong.TenChuong,
-                MucDoCauHoi = g.Key.MucDoCauHoi,
-                LoaiCauHoi = g.Key.LoaiCauHoi,
-                SoCau = g.Sum(x => x.SoCau)
+                MucDo = g.Key.MucDoCauHoi,
+                Loai = g.Key.LoaiCauHoi,
+                SoCauCanLay = g.Sum(x => x.SoCau)
             })
-            .OrderBy(x => x.FirstId) // <--- CHANGE: Giữ thứ tự cấu trúc đề thi
+            .OrderBy(x => x.FirstId)
             .ToList();
 
-        // 3. Load kho câu hỏi
-        var khoCauHoi = _dbContext.CauHoi
-            .AsSplitQuery()
-            .Include(c => c.DsCauTraLoi)
-            .Include(c => c.DsCauHoiCon).ThenInclude(child => child.DsCauTraLoi)
-            .Where(c => c.ParentId == null && c.Chuong.MonHocId == SelectedMonHoc.Id)
-            .ToList();
-
-        var rand = new Random();
-        var selectedQuestionIds = new HashSet<int>();
         var boCauHoiGoc = new List<CauHoi>();
+        var rand = new Random();
 
-        // 4. BỐC CÂU HỎI THEO MA TRẬN
-        foreach (var ct in chiTietMaTrans)
+        // 3. BỐC CÂU HỎI (Logic: Thử -> Thiếu thì Reset -> Thử lại)
+        // Dùng Transaction để đảm bảo tính toàn vẹn khi Update DaRaDe
+        using var transaction = _dbContext.Database.BeginTransaction();
+        try
         {
-            // Lấy các ứng viên phù hợp
-            var candidates = khoCauHoi
-                .Where(c => c.MucDo == ct.MucDoCauHoi &&
-                            c.Loai == ct.LoaiCauHoi &&
-                            c.ChuongId == ct.ChuongId &&
-                            !selectedQuestionIds.Contains(c.Id))
-                .OrderBy(x => rand.Next()) // Trộn ngẫu nhiên candidates
-                .ToList();
+            var daChonIds = new HashSet<int>(); // Tránh chọn trùng trong 1 lần tạo
 
-            int daChon = 0;
-            foreach (var cau in candidates)
+            foreach (var phan in cauTrucDeThi)
             {
-                if (daChon >= ct.SoCau) break;
-
-                // Tính trọng số: Nếu là câu chùm thì đếm số câu con, câu đơn tính là 1
-                int soCauCon = (cau.DsCauHoiCon != null && cau.DsCauHoiCon.Any()) ? cau.DsCauHoiCon.Count : 0;
-                int trongSo = soCauCon > 0 ? soCauCon : 1;
-
-                // Kiểm tra: Nếu thêm câu này vào mà không vượt quá số lượng yêu cầu
-                if (daChon + trongSo <= ct.SoCau)
+                // Hàm local: Lấy danh sách câu hỏi theo tiêu chí
+                List<CauHoi> TimCauHoi(int soLuongCan)
                 {
-                    boCauHoiGoc.Add(cau);
-                    selectedQuestionIds.Add(cau.Id);
-                    daChon += trongSo;
+                    var query = _dbContext.CauHoi
+                        .Include(c => c.DsCauTraLoi)
+                        .Include(c => c.DsCauHoiCon).ThenInclude(ch => ch.DsCauTraLoi)
+                        .Where(c => c.ChuongId == phan.ChuongId &&
+                                    c.MucDo == phan.MucDo &&
+                                    c.Loai == phan.Loai &&
+                                    c.ParentId == null); // Chỉ lấy câu cha/câu đơn
+
+                    // Lọc câu chưa ra đề và chưa được chọn
+                    var candidates = query.AsEnumerable()
+                                          .Where(c => !c.DaRaDe && !daChonIds.Contains(c.Id))
+                                          .OrderBy(x => rand.Next()) // Trộn ngẫu nhiên
+                                          .ToList();
+
+                    var ketQua = new List<CauHoi>();
+                    int daLay = 0;
+
+                    foreach (var cau in candidates)
+                    {
+                        if (daLay >= soLuongCan) break;
+
+                        // Nếu là câu chùm: đếm số câu con. Câu đơn: tính là 1.
+                        int trongSo = (cau.DsCauHoiCon != null && cau.DsCauHoiCon.Any()) ? cau.DsCauHoiCon.Count : 1;
+
+                        // Chỉ lấy nếu không vượt quá số lượng yêu cầu (hoặc bạn có thể cho phép dư nhẹ ở đây nếu muốn)
+                        if (daLay + trongSo <= soLuongCan)
+                        {
+                            ketQua.Add(cau);
+                            daLay += trongSo;
+                        }
+                    }
+                    return ketQua;
+                }
+
+                // --- BƯỚC A: Thử lấy lần 1 ---
+                var listDaChon = TimCauHoi(phan.SoCauCanLay);
+                int demDuoc = listDaChon.Sum(q => (q.DsCauHoiCon != null && q.DsCauHoiCon.Any()) ? q.DsCauHoiCon.Count : 1);
+
+                // --- BƯỚC B: Nếu thiếu -> Reset DaRaDe -> Lấy tiếp phần còn thiếu ---
+                if (demDuoc < phan.SoCauCanLay)
+                {
+                    // Reset toàn bộ câu hỏi của Môn học hiện tại (để công bằng cho các chương khác)
+                    _dbContext.Database.ExecuteSqlRaw(
+                        "UPDATE CauHoi SET DaRaDe = 0 WHERE ChuongId IN (SELECT Id FROM Chuong WHERE MonHocId = {0})",
+                        SelectedMonHoc.Id);
+
+                    // Cần SaveChanges để lệnh update có hiệu lực ngay trong transaction này (hoặc transaction tự lo)
+                    _dbContext.SaveChanges();
+
+                    int conThieu = phan.SoCauCanLay - demDuoc;
+                    var listBoSung = TimCauHoi(conThieu);
+
+                    listDaChon.AddRange(listBoSung);
+
+                    // Cập nhật lại số lượng
+                    demDuoc = listDaChon.Sum(q => (q.DsCauHoiCon != null && q.DsCauHoiCon.Any()) ? q.DsCauHoiCon.Count : 1);
+                }
+
+                // --- BƯỚC C: Kiểm tra cuối cùng ---
+                if (demDuoc < phan.SoCauCanLay)
+                {
+                    MessageBox.Show($"Không đủ câu hỏi cho phần: {phan.TenChuong} - {phan.MucDo}.\n" +
+                        $"Cần: {phan.SoCauCanLay}, Tìm được: {demDuoc}.\n\n" +
+                        "Ngân hàng câu hỏi không đủ đáp ứng ngay cả khi đã reset.",
+                        "Thiếu dữ liệu", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return; // Dừng lại, rollback transaction
+                }
+
+                // --- BƯỚC D: Thêm vào bộ gốc và Đánh dấu ---
+                foreach (var q in listDaChon)
+                {
+                    boCauHoiGoc.Add(q);
+                    daChonIds.Add(q.Id);
+
+                    // Đánh dấu đã dùng
+                    q.DaRaDe = true;
+                    if (q.DsCauHoiCon != null)
+                    {
+                        foreach (var child in q.DsCauHoiCon) child.DaRaDe = true;
+                    }
                 }
             }
 
-            // Nếu không đủ câu hỏi
-            if (daChon < ct.SoCau)
-            {
-                // CHANGE: Thông báo rõ ràng hơn
-                MessageBox.Show($"Không đủ câu hỏi phù hợp cho:\nChương: {ct.TenChuong}\nMức độ: {ct.MucDoCauHoi}\n\n" +
-                    $"Yêu cầu: {ct.SoCau} câu.\nTìm được: {daChon} câu.\n\n" +
-                    "Nguyên nhân có thể: Kho câu hỏi hết hoặc các câu chùm còn lại có số lượng câu con lớn hơn số lượng cần lấy.",
-                    "Thiếu dữ liệu", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
+            _dbContext.SaveChanges();
+            transaction.Commit();
         }
-
-        // Đánh dấu đã ra đề (CHANGE: Đánh dấu cả câu con)
-        foreach (var q in boCauHoiGoc)
+        catch (Exception ex)
         {
-            q.DaRaDe = true;
-            if (q.DsCauHoiCon != null)
-            {
-                foreach (var child in q.DsCauHoiCon)
-                {
-                    child.DaRaDe = true; // <--- CHANGE: Đánh dấu câu con
-                }
-            }
+            transaction.Rollback();
+            MessageBox.Show("Lỗi trong quá trình lấy câu hỏi: " + ex.Message, "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+            return;
         }
 
-        // 5. SINH CÁC MÃ ĐỀ
-        var createTime = DateTime.Now;
+        // --- 4. SINH ĐỀ THI (HOÁN VỊ TỪ BỘ GỐC) ---
+        var thoiGianTao = DateTime.Now;
 
-        for (int i = 0; i < SoLuongDe; i++)
+        for (int i = 0; i < SoLuongDe; i++) // Vòng lặp chạy đúng số lượng đề
         {
             var deThi = new DeThi
             {
@@ -198,7 +238,7 @@ public partial class ThemDeThiWindow : Window, INotifyPropertyChanged
                 MonHocId = SelectedMonHoc.Id,
                 LopHocId = SelectedLopHoc.Id,
                 MaTranId = SelectedMaTran.Id,
-                CreatedAt = createTime,
+                CreatedAt = thoiGianTao,
                 ThoiGianLamBai = ThoiGianLamBai,
                 GhiChu = GhiChu,
                 DaThi = false,
@@ -206,53 +246,69 @@ public partial class ThemDeThiWindow : Window, INotifyPropertyChanged
             };
 
             bool laDeGoc = (i == 0);
-            List<CauHoi> dsCauHoiCuaDe;
+            if (laDeGoc) deThi.GhiChu += " (Đề gốc)";
+
+            // Xây dựng danh sách câu hỏi cho mã đề này
+            List<CauHoi> dsCauHoiCuaDe = new List<CauHoi>();
 
             if (laDeGoc)
             {
+                // Đề gốc: Giữ nguyên thứ tự gốc (đã sắp xếp theo cấu trúc ma trận)
                 dsCauHoiCuaDe = new List<CauHoi>(boCauHoiGoc);
-                deThi.GhiChu += " (Đề gốc)";
             }
             else
             {
-                // CHANGE: Khi trộn đề, ta trộn toàn bộ danh sách câu hỏi đã chọn.
-                // Lưu ý: Việc này sẽ làm mất cấu trúc Chương/Phần (vd: Phần I Chương 1, Phần II Chương 2)
-                // Nếu muốn giữ cấu trúc, cần logic phức tạp hơn (trộn trong từng nhóm chi tiết ma trận).
-                // Với yêu cầu hiện tại, trộn toàn bộ là ok.
-                dsCauHoiCuaDe = boCauHoiGoc.OrderBy(x => rand.Next()).ToList();
+                // Đề hoán vị: Trộn câu hỏi NHƯNG PHẢI GIỮ CẤU TRÚC (Chương 1 xong mới tới Chương 2)
+                foreach (var phan in cauTrucDeThi)
+                {
+                    // Lọc ra các câu thuộc phần này từ bộ gốc
+                    var cauHoiPhanNay = boCauHoiGoc
+                        .Where(c => c.ChuongId == phan.ChuongId &&
+                                    c.MucDo == phan.MucDo &&
+                                    c.Loai == phan.Loai)
+                        .OrderBy(x => rand.Next()) // Chỉ trộn nội bộ trong phần này
+                        .ToList();
+
+                    dsCauHoiCuaDe.AddRange(cauHoiPhanNay);
+                }
             }
 
+            // Tạo chi tiết đề thi (Xử lý trộn đáp án)
             foreach (var ch in dsCauHoiCuaDe)
             {
-                var listCauHoiCanXuLy = new List<CauHoi>();
-                // Nếu là câu chùm, lấy các câu con ra để tạo chi tiết đề thi
-                if (ch.DsCauHoiCon != null && ch.DsCauHoiCon.Count > 0)
+                // Lấy danh sách câu đơn hoặc câu con (để lưu vào bảng ChiTietDeThi)
+                var listCauCanXuLy = new List<CauHoi>();
+                if (ch.DsCauHoiCon != null && ch.DsCauHoiCon.Any())
                 {
-                    listCauHoiCanXuLy.AddRange(ch.DsCauHoiCon.OrderBy(x => x.Id)); // Giữ thứ tự câu con trong bài đọc
+                    // Nếu là câu chùm -> Lấy các câu con (Giữ nguyên thứ tự câu con trong bài đọc)
+                    listCauCanXuLy.AddRange(ch.DsCauHoiCon.OrderBy(x => x.Id));
                 }
                 else
                 {
-                    listCauHoiCanXuLy.Add(ch);
+                    listCauCanXuLy.Add(ch);
                 }
 
-                foreach (var qSub in listCauHoiCanXuLy)
+                foreach (var qSub in listCauCanXuLy)
                 {
                     List<CauTraLoi> dapAnDaXuLy;
 
-                    if (!laDeGoc && ChoPhepTronDapAn)
+                    // Logic trộn đáp án: Áp dụng cho TẤT CẢ các đề nếu được phép
+                    if (ChoPhepTronDapAn)
                     {
-                        var dapAnDuocTron = qSub.DsCauTraLoi.Where(d => d.DaoViTri).OrderBy(_ => rand.Next()).ToList();
-
-                        // CHANGE: Sắp xếp các đáp án cố định theo vị trí gốc (đề phòng trường hợp lỗi thứ tự)
+                        // Tách các đáp án được phép trộn và cố định
+                        var dapAnDuocTron = qSub.DsCauTraLoi.Where(d => d.DaoViTri).OrderBy(x => rand.Next()).ToList();
                         var dapAnCoDinh = qSub.DsCauTraLoi.Where(d => !d.DaoViTri).OrderBy(d => d.ViTriGoc).ToList();
 
+                        // Nối lại: Trộn lên trước, Cố định nằm dưới
                         dapAnDaXuLy = dapAnDuocTron.Concat(dapAnCoDinh).ToList();
                     }
                     else
                     {
+                        // Giữ nguyên thứ tự gốc
                         dapAnDaXuLy = qSub.DsCauTraLoi.OrderBy(d => d.ViTriGoc).ToList();
                     }
 
+                    // Lưu vào DB
                     var chiTiet = new ChiTietDeThi
                     {
                         CauHoiId = qSub.Id,
@@ -260,11 +316,10 @@ public partial class ThemDeThiWindow : Window, INotifyPropertyChanged
                         {
                             NoiDung = d.NoiDung,
                             LaDapAnDung = d.LaDapAnDung,
-                            ViTri = (byte)idx,
+                            ViTri = (byte)idx, // Vị trí mới sau khi trộn (0->A, 1->B...)
                             HinhAnh = d.HinhAnh
                         }).ToList()
                     };
-
                     deThi.DsChiTietDeThi.Add(chiTiet);
                 }
             }
@@ -274,7 +329,8 @@ public partial class ThemDeThiWindow : Window, INotifyPropertyChanged
 
         _dbContext.SaveChanges();
 
-        MessageBox.Show($"Đã tạo thành công {SoLuongDe} mã đề (bắt đầu từ {MaDeBatDau})!", "Thành công", MessageBoxButton.OK, MessageBoxImage.Information);
+        MessageBox.Show($"Đã tạo thành công {SoLuongDe} mã đề (từ {MaDeBatDau} đến {MaDeBatDau + SoLuongDe - 1})!",
+            "Thành công", MessageBoxButton.OK, MessageBoxImage.Information);
         DialogResult = true;
         Close();
     }

@@ -17,7 +17,8 @@ public partial class MyTextBoxControl : UserControl
     }
 
     public static readonly DependencyProperty TextProperty =
-        DependencyProperty.Register("Text", typeof(string), typeof(MyTextBoxControl), new PropertyMetadata(string.Empty));
+    DependencyProperty.Register("Text", typeof(string), typeof(MyTextBoxControl),
+    new FrameworkPropertyMetadata(string.Empty, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault));
 
     public string Hint
     {
