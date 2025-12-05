@@ -7,15 +7,17 @@ using NganHangDeThi.Models;
 using NganHangDeThi.Services;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
+using System.Windows.Input;
 
 namespace NganHangDeThi.MyUserControl;
 
 public partial class RaDeControl : UserControl, INotifyPropertyChanged
 {
-    private readonly AppDbContext _dbContext; 
+    private readonly AppDbContext _dbContext;
     private ObservableCollection<DeThi> _dsDeThi = [];
     private readonly string _baseImageFolder;
     public ObservableCollection<MaTran> MaTranView { get; set; } = [];
@@ -74,8 +76,8 @@ public partial class RaDeControl : UserControl, INotifyPropertyChanged
         DataContext = this;
         _baseImageFolder = options.Value.FolderPath;
 
-        _deThiView = CollectionViewSource.GetDefaultView(_dsDeThi); 
-        
+        _deThiView = CollectionViewSource.GetDefaultView(_dsDeThi);
+
         _deThiView.GroupDescriptions.Add(new PropertyGroupDescription("CreatedAt"));
         _deThiView.Filter = FilterDeThi;
         OnPropertyChanged(nameof(DeThiView));
@@ -110,7 +112,8 @@ public partial class RaDeControl : UserControl, INotifyPropertyChanged
 
         // 1. Thêm Gom nhóm theo Ngày tạo
         _deThiView.GroupDescriptions.Clear(); // Xóa cũ nếu có
-        _deThiView.GroupDescriptions.Add(new PropertyGroupDescription("CreatedAt"));
+        //_deThiView.GroupDescriptions.Add(new PropertyGroupDescription("CreatedAt"));
+        _deThiView.GroupDescriptions.Add(new PropertyGroupDescription("BatchId"));
 
         // 2. Thiết lập Bộ lọc
         _deThiView.Filter = FilterDeThi;
@@ -436,5 +439,109 @@ public partial class RaDeControl : UserControl, INotifyPropertyChanged
     private void BtnTaiLaiDeThi_Click(object sender, RoutedEventArgs e)
     {
         LoadDeThi();
+    }
+
+    // Thêm sự kiện Click
+    private void BtnXuatBoDe_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as Button)?.Tag is not DeThi deThiMau) return;
+
+        // 1. Lấy BatchId từ đề thi mẫu (đề thi đầu tiên trong nhóm)
+        var batchId = deThiMau.BatchId; // Giả sử bạn đã thêm property này vào Entity DeThi
+
+        // 2. Load toàn bộ đề thi trong Batch này từ DB (kèm dữ liệu liên quan)
+        var danhSachDeThi = _dbContext.DeThi
+            .Where(x => x.BatchId == batchId)
+            .Include(x => x.MonHoc)
+            .Include(x => x.LopHoc)
+            .Include(d => d.DsChiTietDeThi)
+                .ThenInclude(ct => ct.CauHoi)
+                    .ThenInclude(ch => ch.Parent) // Load câu chùm
+            .Include(d => d.DsChiTietDeThi)
+                .ThenInclude(ct => ct.DsDapAnTrongDe)
+            .ToList();
+
+        if (!danhSachDeThi.Any())
+        {
+            MessageBox.Show("Không tìm thấy dữ liệu đề thi.", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+            return;
+        }
+
+        // 3. Chọn THƯ MỤC lưu trữ
+        var dialog = new Microsoft.Win32.OpenFolderDialog
+        {
+            Title = "Chọn thư mục để lưu bộ đề thi",
+            // Hầu hết các thuộc tính của OpenFolderDialog là Self-explanatory
+        };
+
+        if (dialog.ShowDialog() == true)
+        {
+            string folderPath = dialog.FolderName;
+            int countSuccess = 0;
+
+            try
+            {
+                Mouse.OverrideCursor = Cursors.Wait; // Hiển thị con trỏ xoay
+
+                foreach (var deThi in danhSachDeThi)
+                {
+                    // Tạo tên file an toàn
+                    string safeTitle = string.Join("_", deThi.TieuDe.Split(Path.GetInvalidFileNameChars()));
+                    string fileNameDe = $"{safeTitle}_MaDe{deThi.MaDe}.docx";
+                    string fileNameDapAn = $"{safeTitle}_MaDe{deThi.MaDe}_DapAn.docx";
+
+                    string pathDe = Path.Combine(folderPath, fileNameDe);
+                    string pathDapAn = Path.Combine(folderPath, fileNameDapAn);
+
+                    // 4. Chuẩn bị dữ liệu Export (Logic cũ của bạn)
+                    var exportData = new DeThiExportData { DeThi = deThi };
+                    foreach (var chiTiet in deThi.DsChiTietDeThi.OrderBy(ct => ct.Id))
+                    {
+                        var ch = chiTiet.CauHoi;
+                        var dapAnDaTron = chiTiet.DsDapAnTrongDe
+                            .OrderBy(d => d.ViTri)
+                            .Select(d => new CauTraLoi
+                            {
+                                NoiDung = d.NoiDung,
+                                LaDapAnDung = d.LaDapAnDung,
+                                ViTriGoc = d.ViTri,
+                                HinhAnh = d.HinhAnh,
+                                DaoViTri = false
+                            }).ToList();
+                        exportData.CauHoiVaDapAn.Add((ch, dapAnDaTron));
+                    }
+
+                    // 5. Gọi Service Export
+                    // Xuất Đề
+                    ExportDeThiToWordService.Export(exportData, pathDe, _baseImageFolder);
+
+                    // Xuất Đáp Án
+                    ExportDapAnService.Export(deThi, pathDapAn, _baseImageFolder);
+
+                    // Đánh dấu đã thi
+                    if (!deThi.DaThi)
+                    {
+                        deThi.DaThi = true;
+                    }
+                    countSuccess++;
+                }
+
+                _dbContext.SaveChanges(); // Lưu trạng thái DaThi 1 lần cuối
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Có lỗi xảy ra: {ex.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                Mouse.OverrideCursor = null; // Trả lại con trỏ chuột
+            }
+
+            if (countSuccess > 0)
+            {
+                MessageBox.Show($"Đã xuất thành công {countSuccess} đề thi vào thư mục:\n{folderPath}",
+                                "Thành công", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
     }
 }

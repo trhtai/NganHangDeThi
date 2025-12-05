@@ -95,13 +95,24 @@
                                                     <StackPanel>
                                                         <Expander IsExpanded="True" BorderThickness="0 0 0 1" BorderBrush="#E0E0E0">
                                                             <Expander.Header>
-                                                                <StackPanel Orientation="Horizontal" Height="30" VerticalAlignment="Center">
-                                                                    <TextBlock Text="{Binding Name, StringFormat='Đợt tạo: {0:dd/MM/yyyy HH:mm:ss}'}" 
-                                                           FontWeight="Bold" Foreground="#0C5776" FontSize="14" VerticalAlignment="Center"/>
+                                                                <Grid Width="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type Expander}}, Path=ActualWidth}">
+                                                                    <Grid.ColumnDefinitions>
+                                                                        <ColumnDefinition Width="*"/>
+                                                                        <ColumnDefinition Width="Auto"/>
+                                                                    </Grid.ColumnDefinitions>
 
-                                                                    <TextBlock Text="{Binding ItemCount, StringFormat=' (Số lượng: {0} đề)'}" 
-                                                           FontStyle="Italic" Foreground="#666" VerticalAlignment="Center" Margin="5 0 0 0"/>
-                                                                </StackPanel>
+                                                                    <StackPanel Orientation="Horizontal" Height="30" VerticalAlignment="Center">
+                                                                        <TextBlock Text="{Binding Items[0].CreatedAt, StringFormat='Đợt tạo: {0:dd/MM/yyyy HH:mm:ss}'}" 
+                                                       FontWeight="Bold" Foreground="#0C5776" FontSize="14" VerticalAlignment="Center"/>
+                                                                        <TextBlock Text="{Binding ItemCount, StringFormat=' (Số lượng: {0} đề)'}" 
+                                                       FontStyle="Italic" Foreground="#666" VerticalAlignment="Center" Margin="5 0 0 0"/>
+                                                                    </StackPanel>
+
+                                                                    <Button Grid.Column="1" Content="Xuất bộ đề này" 
+                                                Name="BtnXuatBoDe" Click="BtnXuatBoDe_Click" 
+                                                Tag="{Binding Items[0]}" 
+                                                Margin="0 0 40 0" Style="{StaticResource AddButton}" Width="120" Height="26" FontSize="12"/>
+                                                                </Grid>
                                                             </Expander.Header>
                                                             <Expander.Content>
                                                                 <ItemsPresenter />
@@ -137,9 +148,9 @@
                            FontSize="14"/>
 
                                             <Border Grid.Column="1" 
-                        Background="#e3f2fd" CornerRadius="4" Margin="0 0 5 0" Padding="8 2"
-                        BorderBrush="#2196f3" BorderThickness="1"
-                        Visibility="{Binding GhiChu, Converter={StaticResource DeGocVisibilityConverter}}">
+                                                    Background="#e3f2fd" CornerRadius="4" Margin="0 0 5 0" Padding="8 2"
+                                                    BorderBrush="#2196f3" BorderThickness="1"
+                                                    Visibility="{Binding GhiChu, Converter={StaticResource DeGocVisibilityConverter}}">
                                                 <StackPanel Orientation="Horizontal">
                                                     <Icon:PackIconMaterial Kind="Star" Width="10" Height="10" VerticalAlignment="Center" Foreground="#1976d2" Margin="0 0 4 0"/>
                                                     <TextBlock Text="ĐỀ GỐC" FontSize="10" FontWeight="Bold" Foreground="#1976d2" VerticalAlignment="Center"/>

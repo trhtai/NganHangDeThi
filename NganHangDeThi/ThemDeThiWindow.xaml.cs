@@ -241,6 +241,7 @@ public partial class ThemDeThiWindow : Window, INotifyPropertyChanged
 
         // 4. SINH ĐỀ THI (HOÁN VỊ TỪ BỘ GỐC)
         var thoiGianTao = DateTime.Now;
+        var batchId = Guid.NewGuid();
 
         for (int i = 0; i < SoLuongDe; i++)
         {
@@ -255,6 +256,7 @@ public partial class ThemDeThiWindow : Window, INotifyPropertyChanged
                 CreatedAt = thoiGianTao,
                 ThoiGianLamBai = ThoiGianLamBai,
                 GhiChu = GhiChu,
+                BatchId = batchId,
                 DaThi = false
             };
 

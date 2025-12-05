@@ -12,6 +12,7 @@ public class DeThi : IEntity<int>
     public string GhiChu { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public bool DaThi { get; set; } = false;
+    public Guid BatchId { get; set; } // Dùng để gom nhóm đề thi trong cùng một lần tạo
 
     public int MonHocId { get; set; }
     public MonHoc? MonHoc { get; set; }
