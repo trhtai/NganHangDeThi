@@ -74,7 +74,10 @@ public partial class RaDeControl : UserControl, INotifyPropertyChanged
         DataContext = this;
         _baseImageFolder = options.Value.FolderPath;
 
-        _deThiView = CollectionViewSource.GetDefaultView(_dsDeThi);
+        _deThiView = CollectionViewSource.GetDefaultView(_dsDeThi); 
+        
+        _deThiView.GroupDescriptions.Add(new PropertyGroupDescription("CreatedAt"));
+        _deThiView.Filter = FilterDeThi;
         OnPropertyChanged(nameof(DeThiView));
 
         LoadDeThi();
@@ -95,9 +98,24 @@ public partial class RaDeControl : UserControl, INotifyPropertyChanged
     private void LoadDeThi()
     {
         var dsDeThi = LayDsDeThi() ?? [];
+
+        // Thay vì tạo mới ObservableCollection, hãy giữ nguyên instance cũ nếu có thể, 
+        // hoặc cấu hình lại View sau khi tạo mới.
+        // Cách an toàn nhất với code hiện tại của bạn là cấu hình lại View ngay tại đây:
+
         _dsDeThi = new ObservableCollection<DeThi>(dsDeThi);
         _deThiView = CollectionViewSource.GetDefaultView(_dsDeThi);
+
+        // --- QUAN TRỌNG: THIẾT LẬP LẠI GOM NHÓM VÀ BỘ LỌC ---
+
+        // 1. Thêm Gom nhóm theo Ngày tạo
+        _deThiView.GroupDescriptions.Clear(); // Xóa cũ nếu có
+        _deThiView.GroupDescriptions.Add(new PropertyGroupDescription("CreatedAt"));
+
+        // 2. Thiết lập Bộ lọc
         _deThiView.Filter = FilterDeThi;
+
+        // 3. Thông báo cập nhật UI
         OnPropertyChanged(nameof(DeThiView));
     }
 

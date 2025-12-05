@@ -38,7 +38,7 @@ từ đó đề xuất cho user nhập số lượng câu điền khuyết dựa
     + thêm môn và chương khi thêm câu hỏi từ file
 	
 15. Xuất đáp án dạng bảng
-16. Có đề gốc, sau đó sinh các đề con từ đề gốc
+16. (FIXED Có đề gốc, sau đó sinh các đề con từ đề gốc
 	+ lưu lại đề con 
 	+ câpj nhật đề gốc -> sinh đề con -> cập nhật đề con (HƠI VÔ LÍ)
 	+ Có 2 loại đề: 
