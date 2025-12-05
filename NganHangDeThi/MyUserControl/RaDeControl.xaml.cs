@@ -446,17 +446,17 @@ public partial class RaDeControl : UserControl, INotifyPropertyChanged
     {
         if ((sender as Button)?.Tag is not DeThi deThiMau) return;
 
-        // 1. Lấy BatchId từ đề thi mẫu (đề thi đầu tiên trong nhóm)
-        var batchId = deThiMau.BatchId; // Giả sử bạn đã thêm property này vào Entity DeThi
+        // 1. Lấy BatchId
+        var batchId = deThiMau.BatchId;
 
-        // 2. Load toàn bộ đề thi trong Batch này từ DB (kèm dữ liệu liên quan)
+        // 2. Load dữ liệu
         var danhSachDeThi = _dbContext.DeThi
             .Where(x => x.BatchId == batchId)
             .Include(x => x.MonHoc)
             .Include(x => x.LopHoc)
             .Include(d => d.DsChiTietDeThi)
                 .ThenInclude(ct => ct.CauHoi)
-                    .ThenInclude(ch => ch.Parent) // Load câu chùm
+                    .ThenInclude(ch => ch.Parent)
             .Include(d => d.DsChiTietDeThi)
                 .ThenInclude(ct => ct.DsDapAnTrongDe)
             .ToList();
@@ -467,11 +467,10 @@ public partial class RaDeControl : UserControl, INotifyPropertyChanged
             return;
         }
 
-        // 3. Chọn THƯ MỤC lưu trữ
+        // 3. Chọn thư mục
         var dialog = new Microsoft.Win32.OpenFolderDialog
         {
             Title = "Chọn thư mục để lưu bộ đề thi",
-            // Hầu hết các thuộc tính của OpenFolderDialog là Self-explanatory
         };
 
         if (dialog.ShowDialog() == true)
@@ -481,19 +480,17 @@ public partial class RaDeControl : UserControl, INotifyPropertyChanged
 
             try
             {
-                Mouse.OverrideCursor = Cursors.Wait; // Hiển thị con trỏ xoay
+                Mouse.OverrideCursor = Cursors.Wait;
 
+                // --- VÒNG LẶP: CHỈ XUẤT ĐỀ THI ---
                 foreach (var deThi in danhSachDeThi)
                 {
-                    // Tạo tên file an toàn
+                    // Tạo tên file an toàn cho ĐỀ THI
                     string safeTitle = string.Join("_", deThi.TieuDe.Split(Path.GetInvalidFileNameChars()));
-                    string fileNameDe = $"{safeTitle}_MaDe{deThi.MaDe}.docx";
-                    string fileNameDapAn = $"{safeTitle}_MaDe{deThi.MaDe}_DapAn.docx";
-
+                    string fileNameDe = $"De_{deThi.MaDe}_{safeTitle}.docx";
                     string pathDe = Path.Combine(folderPath, fileNameDe);
-                    string pathDapAn = Path.Combine(folderPath, fileNameDapAn);
 
-                    // 4. Chuẩn bị dữ liệu Export (Logic cũ của bạn)
+                    // Chuẩn bị dữ liệu Export Đề
                     var exportData = new DeThiExportData { DeThi = deThi };
                     foreach (var chiTiet in deThi.DsChiTietDeThi.OrderBy(ct => ct.Id))
                     {
@@ -511,22 +508,30 @@ public partial class RaDeControl : UserControl, INotifyPropertyChanged
                         exportData.CauHoiVaDapAn.Add((ch, dapAnDaTron));
                     }
 
-                    // 5. Gọi Service Export
-                    // Xuất Đề
+                    // Xuất file Đề thi
                     ExportDeThiToWordService.Export(exportData, pathDe, _baseImageFolder);
 
-                    // Xuất Đáp Án
-                    ExportDapAnService.Export(deThi, pathDapAn, _baseImageFolder);
+                    // (ĐÃ XÓA): Dòng ExportDapAnService.Export(...) ở đây để không xuất lẻ nữa
 
                     // Đánh dấu đã thi
-                    if (!deThi.DaThi)
-                    {
-                        deThi.DaThi = true;
-                    }
+                    if (!deThi.DaThi) deThi.DaThi = true;
+
                     countSuccess++;
                 }
 
-                _dbContext.SaveChanges(); // Lưu trạng thái DaThi 1 lần cuối
+                // --- MỚI: XUẤT ĐÁP ÁN TỔNG HỢP (1 LẦN DUY NHẤT) ---
+                if (countSuccess > 0)
+                {
+                    // Tạo tên file đáp án tổng hợp (Ví dụ: DapAn_TongHop_20231025.docx)
+                    string timeStamp = danhSachDeThi.First().CreatedAt.ToString("yyyyMMdd_HHmmss");
+                    string fileNameDapAnTong = $"DapAn_TongHop_{timeStamp}.docx";
+                    string pathDapAn = Path.Combine(folderPath, fileNameDapAnTong);
+
+                    // Gọi hàm ExportBatch
+                    ExportDapAnService.ExportBatch(danhSachDeThi, pathDapAn, _baseImageFolder);
+                }
+
+                _dbContext.SaveChanges();
             }
             catch (Exception ex)
             {
@@ -534,12 +539,12 @@ public partial class RaDeControl : UserControl, INotifyPropertyChanged
             }
             finally
             {
-                Mouse.OverrideCursor = null; // Trả lại con trỏ chuột
+                Mouse.OverrideCursor = null;
             }
 
             if (countSuccess > 0)
             {
-                MessageBox.Show($"Đã xuất thành công {countSuccess} đề thi vào thư mục:\n{folderPath}",
+                MessageBox.Show($"Đã xuất thành công {countSuccess} đề thi và 1 file đáp án tổng hợp vào thư mục:\n{folderPath}",
                                 "Thành công", MessageBoxButton.OK, MessageBoxImage.Information);
             }
         }
