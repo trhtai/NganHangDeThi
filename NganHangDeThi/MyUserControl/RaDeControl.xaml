@@ -60,13 +60,15 @@
                             </StackPanel>
                         </Button>
 
-                        <TextBlock Text="Lớp học" FontFamily="13" FontWeight="SemiBold" Margin="0 0 10 0"
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Lớp học" FontFamily="13" FontWeight="SemiBold" Margin="0 0 10 0"
                Foreground="#121518" HorizontalAlignment="Left" VerticalAlignment="Center" />
 
-                        <ComboBox Style="{StaticResource ComboBoxFlatStyle}" Width="150" Margin="0 0 20 0"
-              ItemsSource="{Binding DsLopHoc}"
-              SelectedItem="{Binding LopHocLoc, UpdateSourceTrigger=PropertyChanged}"
-              DisplayMemberPath="MaLop" />
+                            <ComboBox Style="{StaticResource ComboBoxFlatStyle}" Width="150" Margin="0 0 20 0"
+                                  ItemsSource="{Binding DsLopHoc}"
+                                  SelectedItem="{Binding LopHocLoc, UpdateSourceTrigger=PropertyChanged}"
+                                  DisplayMemberPath="MaLop" />
+                        </StackPanel>
 
                         <TextBlock Text="Tìm kiếm" FontFamily="13" FontWeight="SemiBold" Margin="0 0 10 0"
                Foreground="#121518" HorizontalAlignment="Left" VerticalAlignment="Center" />
