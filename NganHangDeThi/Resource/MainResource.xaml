@@ -686,7 +686,7 @@
         </ControlTemplate.Triggers>
     </ControlTemplate>
 
-    <Style x:Key="ComboBoxFlatStyle"  TargetType="{x:Type ComboBox}">
+    <Style x:Key="ComboBoxFlatStyle" TargetType="{x:Type ComboBox}">
         <Setter Property="UIElement.SnapsToDevicePixels" Value="True"/>
         <Setter Property="FrameworkElement.OverridesDefaultStyle" Value="True"/>
         <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Auto"/>
@@ -697,24 +697,25 @@
         <Setter Property="Control.Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ComboBox">
+
                     <Grid x:Name="MainGrid">
 
                         <ToggleButton Name="ToggleButton" Grid.Column="2"
-                        ClickMode="Press" Focusable="False"
-                        IsChecked="{Binding Path=IsDropDownOpen, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"
-                        Template="{StaticResource ComboBoxToggleButtonTemplate}"/>
+                            ClickMode="Press" Focusable="False"
+                            IsChecked="{Binding Path=IsDropDownOpen, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"
+                            Template="{StaticResource ComboBoxToggleButtonTemplate}"/>
 
                         <ContentPresenter Name="ContentSite" Margin="5, 3, 23, 3" IsHitTestVisible="False"
-                              HorizontalAlignment="Left" VerticalAlignment="Center"                                  
-                              Content="{TemplateBinding ComboBox.SelectionBoxItem}" 
-                              ContentTemplate="{TemplateBinding ComboBox.SelectionBoxItemTemplate}"
-                              ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}"/>
+                                  HorizontalAlignment="Left" VerticalAlignment="Center"                                  
+                                  Content="{TemplateBinding ComboBox.SelectionBoxItem}" 
+                                  ContentTemplate="{TemplateBinding ComboBox.SelectionBoxItemTemplate}"
+                                  ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}"/>
 
                         <TextBox Name="PART_EditableTextBox" Margin="3, 3, 23, 3"                     
-                            IsReadOnly="{TemplateBinding IsReadOnly}"
-                            Visibility="Hidden" Background="Transparent"
-                            HorizontalAlignment="Left" VerticalAlignment="Center"
-                            Focusable="True" >
+                                IsReadOnly="{TemplateBinding IsReadOnly}"
+                                Visibility="Hidden" Background="Transparent"
+                                HorizontalAlignment="Left" VerticalAlignment="Center"
+                                Focusable="True" >
                             <TextBox.Template>
                                 <ControlTemplate TargetType="TextBox" >
                                     <Border Name="PART_ContentHost" Focusable="False" />
@@ -722,24 +723,46 @@
                             </TextBox.Template>
                         </TextBox>
 
-                        <Popup Name="Popup" Placement="Bottom"
-                       Focusable="False" AllowsTransparency="True"
-                       IsOpen="{TemplateBinding ComboBox.IsDropDownOpen}"
-                       PlacementTarget="{Binding ElementName=MainGrid}"
-                       PopupAnimation="Slide">
+                        <Popup Name="Popup" 
+       Placement="Bottom"
+       Focusable="False" 
+       AllowsTransparency="True"
+       IsOpen="{TemplateBinding ComboBox.IsDropDownOpen}"
+       PopupAnimation="Slide"
+       
+       Tag="{Binding ElementName=MainGrid}"
+       PlacementTarget="{Binding RelativeSource={RelativeSource Self}, Path=Tag}">
 
                             <Grid Name="DropDown" SnapsToDevicePixels="True"
-                          MinWidth="{TemplateBinding FrameworkElement.ActualWidth}"
-                          MaxHeight="{TemplateBinding ComboBox.MaxDropDownHeight}">
+          MinWidth="{TemplateBinding FrameworkElement.ActualWidth}"
+          MaxHeight="{TemplateBinding ComboBox.MaxDropDownHeight}">
                                 <Border Name="DropDownBorder" Background="White" Margin="0, 1, 0, 0"
-                                CornerRadius="0" BorderThickness="1,1,1,1" 
-                                BorderBrush="{StaticResource ComboBoxNormalBorderBrush}"/>
+                CornerRadius="0" BorderThickness="1,1,1,1" 
+                BorderBrush="{StaticResource ComboBoxNormalBorderBrush}"/>
                                 <ScrollViewer Margin="4" SnapsToDevicePixels="True">
                                     <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Contained" />
                                 </ScrollViewer>
                             </Grid>
                         </Popup>
+
                     </Grid>
+
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="ItemsControl.HasItems" Value="False">
+                            <Setter Property="FrameworkElement.MinHeight" TargetName="DropDownBorder" Value="95"/>
+                        </Trigger>
+                        <Trigger Property="UIElement.IsEnabled" Value="False">
+                            <Setter Property="TextElement.Foreground" Value="{StaticResource ComboBoxDisabledForegroundBrush}"/>
+                        </Trigger>
+                        <Trigger Property="ItemsControl.IsGrouping" Value="True">
+                            <Setter Property="ScrollViewer.CanContentScroll" Value="False"/>
+                        </Trigger>
+                        <Trigger Property="ComboBox.IsEditable" Value="True">
+                            <Setter Property="KeyboardNavigation.IsTabStop" Value="False"/>
+                            <Setter Property="UIElement.Visibility" TargetName="PART_EditableTextBox" Value="Visible"/>
+                            <Setter Property="UIElement.Visibility" TargetName="ContentSite" Value="Hidden"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
