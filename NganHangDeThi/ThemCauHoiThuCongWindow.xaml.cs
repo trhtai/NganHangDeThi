@@ -1,109 +1,94 @@
-﻿using Microsoft.Win32;
-using Microsoft.Extensions.Options;
-using NganHangDeThi.Common.Configs;
-using NganHangDeThi.Common.Enum;
+﻿using NganHangDeThi.Common.Enum;
 using NganHangDeThi.Data.DataContext;
 using NganHangDeThi.Data.Entity;
 using NganHangDeThi.Helpers;
-using NganHangDeThi.Models; // Chứa class CauHoiRaw nếu cần map
+using NganHangDeThi.Models;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media.Imaging;
+using System.Windows.Media;
 
 namespace NganHangDeThi;
 
-// Đặt class này bên dưới class Window hoặc trong file Models
-//public class CauTraLoiViewModel : INotifyPropertyChanged
-//{
-//    public string NoiDung { get; set; } = "";
-//    public bool LaDapAnDung { get; set; } = false;
-//    public bool DaoViTri { get; set; } = true;
-//    public string? HinhAnh { get; set; } // Đường dẫn ảnh tạm
+// ViewModel cho đáp án (Đã cập nhật để hỗ trợ RichTextBox)
+public class CauTraLoiViewModel : INotifyPropertyChanged
+{
+    public bool LaDapAnDung { get; set; } = false;
+    public bool DaoViTri { get; set; } = true;
 
-//    // Sự kiện PropertyChanged để DataGrid cập nhật
-//    public event PropertyChangedEventHandler? PropertyChanged;
-//}
+    // Giữ tham chiếu đến RichTextBox của dòng này để lấy dữ liệu sau
+    public RichTextBox? RtbInstance { get; set; }
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+}
 
 public partial class ThemCauHoiThuCongWindow : Window, INotifyPropertyChanged
 {
     private readonly AppDbContext _db;
-    private readonly string _imageBasePath;
 
-    // Dữ liệu cho ComboBox
+    // Dữ liệu
     public ObservableCollection<MonHoc> DsMonHoc { get; set; } = [];
     public ObservableCollection<Chuong> DsChuong { get; set; } = [];
 
-    // Dữ liệu cho Grid (Câu đơn)
-    public ObservableCollection<CauTraLoiViewModel> DsDapAnDon { get; set; } = [];
+    // Danh sách đáp án (Binding vào ItemsControl)
+    public ObservableCollection<CauTraLoiViewModel> DsDapAnViewModel { get; set; } = [];
 
-    // Dữ liệu cho Grid (Câu chùm)
-    public ObservableCollection<CauHoiRaw> DsCauHoiCon { get; set; } = [];
-
-    // Biến lưu ảnh tạm
-    private string? _anhCauHoiDon;
-    private string? _anhCauHoiChum;
-
-    // CHẾ ĐỘ NHẬP CÂU CON
+    // Chế độ con (Child Mode)
     private bool _isChildMode = false;
-    public CauHoiRaw? CauHoiConResult { get; private set; } // Kết quả trả về khi ở chế độ con
+    public CauHoiRaw? CauHoiConResult { get; private set; }
 
     // Constructor chính
-    public ThemCauHoiThuCongWindow(AppDbContext db, IOptions<ImageStorageOptions> options)
+    public ThemCauHoiThuCongWindow(AppDbContext db)
     {
         InitializeComponent();
         DataContext = this;
         _db = db;
-        _imageBasePath = options.Value.FolderPath;
-
         LoadInitialData();
-        DsDapAnDon.CollectionChanged += (s, e) => { /* Logic update nếu cần */ };
     }
 
-    // Constructor dành cho chế độ nhập Câu hỏi con
-    public ThemCauHoiThuCongWindow(IOptions<ImageStorageOptions> options) : this(null!, options)
+    // Constructor cho Child Mode (Câu hỏi con)
+    // Lưu ý: Bỏ IOptions vì không dùng ảnh nữa
+    public ThemCauHoiThuCongWindow() : this(null!)
     {
         _isChildMode = true;
-        // Ẩn các phần không cần thiết của Parent
+        InitializeComponent();
+        DataContext = this;
+
         Title = "Thêm câu hỏi con";
+        // Ẩn phần chọn Môn/Chương
         CbbMonHoc.Visibility = Visibility.Collapsed;
         CbbChuong.Visibility = Visibility.Collapsed;
 
-        // Ẩn luôn Tab Câu chùm, chỉ để lại Tab Câu đơn
-        // (Cách nhanh: Select Tab 0 và ẩn Header TabControl)
-        // Nhưng ở đây ta cứ để mặc định Tab 0
-        ((TabItem)TabControl.Items[1]).Visibility = Visibility.Collapsed;
+        LoadInitialData();
     }
 
     private void LoadInitialData()
     {
-        if (_isChildMode)
-        {
-            // Load Enum
-            CbbMucDoDon.ItemsSource = MucDoCauHoiEnumHelper.DanhSach;
-            CbbLoaiDon.ItemsSource = LoaiCauHoiEnumHelper.DanhSach;
+        // Mặc định thêm 4 đáp án trống
+        DsDapAnViewModel.Add(new CauTraLoiViewModel());
+        DsDapAnViewModel.Add(new CauTraLoiViewModel());
+        DsDapAnViewModel.Add(new CauTraLoiViewModel());
+        DsDapAnViewModel.Add(new CauTraLoiViewModel());
 
-            // Grid binding
-            DgDapAn.ItemsSource = DsDapAnDon;
-            return;
-        }
-
-        // Load Môn học
-        var mons = _db.MonHoc.OrderBy(m => m.TenMon).ToList();
-        DsMonHoc = new ObservableCollection<MonHoc>(mons);
-        CbbMonHoc.ItemsSource = DsMonHoc;
-
-        // Load Enum
         CbbMucDoDon.ItemsSource = MucDoCauHoiEnumHelper.DanhSach;
         CbbLoaiDon.ItemsSource = LoaiCauHoiEnumHelper.DanhSach;
 
-        // Grid binding
-        DgDapAn.ItemsSource = DsDapAnDon;
-        DgCauHoiCon.ItemsSource = DsCauHoiCon;
+        // Mặc định chọn
+        CbbMucDoDon.SelectedIndex = 0;
+        CbbLoaiDon.SelectedIndex = 0;
+
+        if (!_isChildMode && _db != null)
+        {
+            var mons = _db.MonHoc.OrderBy(m => m.TenMon).ToList();
+            DsMonHoc = new ObservableCollection<MonHoc>(mons);
+            CbbMonHoc.ItemsSource = DsMonHoc;
+        }
     }
+
+    // --- SỰ KIỆN ---
 
     private void CbbMonHoc_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
@@ -116,147 +101,102 @@ public partial class ThemCauHoiThuCongWindow : Window, INotifyPropertyChanged
         }
     }
 
-    // --- LOGIC XỬ LÝ ẢNH ---
-    private string? ChonAnhVaLuuTam()
+    // Sự kiện này cực kỳ quan trọng: Khi ItemsControl sinh ra RichTextBox cho mỗi đáp án,
+    // ta cần lưu tham chiếu của RTB đó vào ViewModel tương ứng để sau này lấy Text ra.
+    private void RichTextBox_Loaded(object sender, RoutedEventArgs e)
     {
-        var openDialog = new OpenFileDialog { Filter = "Image Files|*.jpg;*.jpeg;*.png;*.bmp" };
-        if (openDialog.ShowDialog() == true)
+        if (sender is RichTextBox rtb && rtb.DataContext is CauTraLoiViewModel viewModel)
         {
-            string sourceFile = openDialog.FileName;
-            string fileName = $"{Guid.NewGuid()}{Path.GetExtension(sourceFile)}";
-            string destPath = Path.Combine(_imageBasePath, fileName);
-
-            // Tạo thư mục nếu chưa có
-            Directory.CreateDirectory(_imageBasePath);
-            File.Copy(sourceFile, destPath);
-
-            return fileName; // Trả về tên file để lưu DB
-        }
-        return null;
-    }
-
-    private void BtnChonAnhCauHoi_Click(object sender, RoutedEventArgs e)
-    {
-        var f = ChonAnhVaLuuTam();
-        if (f != null)
-        {
-            _anhCauHoiDon = f;
-            ImgCauHoiDon.Source = new BitmapImage(new Uri(Path.Combine(_imageBasePath, f)));
-            ImgCauHoiDon.Visibility = Visibility.Visible;
+            viewModel.RtbInstance = rtb;
         }
     }
 
-    private void BtnChonAnhChum_Click(object sender, RoutedEventArgs e)
-    {
-        var f = ChonAnhVaLuuTam();
-        if (f != null)
-        {
-            _anhCauHoiChum = f;
-            ImgCauHoiChum.Source = new BitmapImage(new Uri(Path.Combine(_imageBasePath, f)));
-            ImgCauHoiChum.Visibility = Visibility.Visible;
-        }
-    }
-
-    // --- LOGIC TAB CÂU ĐƠN ---
     private void BtnThemDapAn_Click(object sender, RoutedEventArgs e)
     {
-        DsDapAnDon.Add(new CauTraLoiViewModel { NoiDung = "", LaDapAnDung = false, DaoViTri = true });
+        DsDapAnViewModel.Add(new CauTraLoiViewModel());
     }
 
     private void BtnXoaDapAn_Click(object sender, RoutedEventArgs e)
     {
-        if ((sender as Button)?.DataContext is CauTraLoiViewModel item)
+        if ((sender as Button)?.Tag is CauTraLoiViewModel item)
         {
-            DsDapAnDon.Remove(item);
+            DsDapAnViewModel.Remove(item);
         }
     }
 
-    // --- LOGIC TAB CÂU CHÙM ---
-    private void BtnThemCauCon_Click(object sender, RoutedEventArgs e)
+    // --- TOOLBAR ACTIONS ---
+    // Các lệnh ToggleBold, ToggleItalic... WPF tự xử lý với Focus.
+    // Ta chỉ cần xử lý nút màu sắc.
+
+    private void BtnToDo_Click(object sender, RoutedEventArgs e)
     {
-        // Mở chính cửa sổ này nhưng ở chế độ ChildMode
-        // Lưu ý: Cần inject IOptions<ImageStorageOptions> từ App.xaml.cs hoặc truyền tay
-        // Để đơn giản, giả sử bạn truyền tay path hoặc resolve service
-        // Ở đây tôi demo cách truyền tay path
-        var options = new ImageStorageOptions { FolderPath = _imageBasePath };
-        var iOptions = Options.Create(options);
-
-        var childWindow = new ThemCauHoiThuCongWindow(iOptions);
-        if (childWindow.ShowDialog() == true && childWindow.CauHoiConResult != null)
+        // Lấy RichTextBox đang được Focus (có thể là ở Câu hỏi hoặc ở 1 trong các Đáp án)
+        var focusedControl = FocusManager.GetFocusedElement(this) as RichTextBox;
+        if (focusedControl != null && !focusedControl.Selection.IsEmpty)
         {
-            DsCauHoiCon.Add(childWindow.CauHoiConResult);
+            focusedControl.Selection.ApplyPropertyValue(TextElement.ForegroundProperty, Brushes.Red);
         }
     }
 
-    private void BtnXoaCauHoiCon_Click(object sender, RoutedEventArgs e)
+    private void BtnXoaMau_Click(object sender, RoutedEventArgs e)
     {
-        if ((sender as Button)?.DataContext is CauHoiRaw item)
+        var focusedControl = FocusManager.GetFocusedElement(this) as RichTextBox;
+        if (focusedControl != null && !focusedControl.Selection.IsEmpty)
         {
-            DsCauHoiCon.Remove(item);
+            focusedControl.Selection.ApplyPropertyValue(TextElement.ForegroundProperty, Brushes.Black);
         }
     }
 
-    // --- LOGIC LƯU DỮ LIỆU ---
+    // --- SAVE LOGIC ---
+
     private void BtnLuu_Click(object sender, RoutedEventArgs e)
     {
-        // 1. Kiểm tra Tab đang chọn
-        if (TabControl.SelectedIndex == 0) // CÂU ĐƠN
-        {
-            SaveCauDon();
-        }
-        else // CÂU CHÙM
-        {
-            SaveCauChum();
-        }
-    }
+        // 1. Lấy nội dung câu hỏi từ RichTextBox chính
+        string noiDungCauHoi = RichTextHelper.GetHtmlFromRichTextBox(RtbNoiDungDon);
 
-    private void SaveCauDon()
-    {
         // Validate
-        if (!_isChildMode && (CbbChuong.SelectedItem == null)) { Msg("Vui lòng chọn chương."); return; }
-        if (string.IsNullOrWhiteSpace(TxtNoiDungDon.Text)) { Msg("Nội dung câu hỏi trống."); return; }
-        if (DsDapAnDon.Count < 2) { Msg("Cần ít nhất 2 đáp án."); return; }
-        if (!DsDapAnDon.Any(d => d.LaDapAnDung)) { Msg("Cần ít nhất 1 đáp án đúng."); return; }
+        if (!_isChildMode && CbbChuong.SelectedItem == null) { Msg("Vui lòng chọn chương."); return; }
+        if (string.IsNullOrWhiteSpace(noiDungCauHoi)) { Msg("Nội dung câu hỏi trống."); return; }
 
-        var cauHoi = new CauHoiRaw
+        // 2. Lấy nội dung đáp án từ các RichTextBox con
+        var listDapAnRaw = new List<CauTraLoiRaw>();
+        int stt = 1;
+        foreach (var vm in DsDapAnViewModel)
         {
-            NoiDung = TxtNoiDungDon.Text,
+            if (vm.RtbInstance == null) continue;
+
+            string noiDungDapAn = RichTextHelper.GetHtmlFromRichTextBox(vm.RtbInstance);
+
+            // Chỉ lấy các đáp án có nội dung
+            if (!string.IsNullOrWhiteSpace(noiDungDapAn))
+            {
+                listDapAnRaw.Add(new CauTraLoiRaw(noiDungDapAn, vm.LaDapAnDung, (byte)stt++, vm.DaoViTri, null));
+            }
+        }
+
+        if (listDapAnRaw.Count < 2) { Msg("Cần ít nhất 2 đáp án có nội dung."); return; }
+        if (!listDapAnRaw.Any(d => d.LaDapAnDung)) { Msg("Cần ít nhất 1 đáp án đúng."); return; }
+
+        // 3. Tạo object dữ liệu
+        var cauHoiRaw = new CauHoiRaw
+        {
+            NoiDung = noiDungCauHoi,
             MucDo = (MucDoCauHoi)(CbbMucDoDon.SelectedValue ?? MucDoCauHoi.NhanBiet),
             Loai = (LoaiCauHoi)(CbbLoaiDon.SelectedValue ?? LoaiCauHoi.TracNghiemMotDapAn),
-            HinhAnh = _anhCauHoiDon,
-            DapAn = DsDapAnDon.Select((d, i) => new CauTraLoiRaw(d.NoiDung, d.LaDapAnDung, (byte)(i + 1), d.DaoViTri, d.HinhAnh)).ToList()
+            HinhAnh = null, // Bỏ ảnh
+            DapAn = listDapAnRaw
         };
 
         if (_isChildMode)
         {
-            CauHoiConResult = cauHoi;
+            CauHoiConResult = cauHoiRaw;
             DialogResult = true;
             Close();
         }
         else
         {
-            // Lưu vào DB
-            LuuVaoDB(cauHoi, null);
+            LuuVaoDB(cauHoiRaw, null);
         }
-    }
-
-    private void SaveCauChum()
-    {
-        if (CbbChuong.SelectedItem == null) { Msg("Vui lòng chọn chương."); return; }
-        if (string.IsNullOrWhiteSpace(TxtNoiDungChum.Text)) { Msg("Nội dung đoạn văn trống."); return; }
-        if (DsCauHoiCon.Count == 0) { Msg("Cần ít nhất 1 câu hỏi con."); return; }
-
-        // Tạo câu cha (Parent)
-        var parent = new CauHoiRaw
-        {
-            NoiDung = TxtNoiDungChum.Text,
-            MucDo = MucDoCauHoi.ThongHieu, // Mặc định hoặc tính max
-            Loai = LoaiCauHoi.ChumTracNghiemMotDapAn, // Tạm định danh
-            HinhAnh = _anhCauHoiChum,
-            CauHoiCon = DsCauHoiCon.ToList()
-        };
-
-        LuuVaoDB(parent, null);
     }
 
     private void LuuVaoDB(CauHoiRaw raw, int? parentId)
@@ -265,20 +205,17 @@ public partial class ThemCauHoiThuCongWindow : Window, INotifyPropertyChanged
         {
             var chuongId = ((Chuong)CbbChuong.SelectedItem).Id;
 
-            // Dùng QuestionExtractorService hoặc tự map thủ công
-            // Ở đây map thủ công đơn giản
             var entity = new CauHoi
             {
                 NoiDung = raw.NoiDung,
                 MucDo = raw.MucDo,
                 Loai = raw.Loai,
-                HinhAnh = raw.HinhAnh,
+                HinhAnh = null,
                 ChuongId = chuongId,
                 ParentId = parentId,
                 DaRaDe = false
             };
 
-            // Map đáp án
             foreach (var d in raw.DapAn)
             {
                 entity.DsCauTraLoi.Add(new CauTraLoi
@@ -287,73 +224,26 @@ public partial class ThemCauHoiThuCongWindow : Window, INotifyPropertyChanged
                     LaDapAnDung = d.LaDapAnDung,
                     ViTriGoc = d.ViTriGoc,
                     DaoViTri = d.DaoViTri,
-                    HinhAnh = d.HinhAnh
+                    HinhAnh = null
                 });
             }
 
             _db.CauHoi.Add(entity);
-            _db.SaveChanges(); // Save để lấy Id cho con
+            _db.SaveChanges();
 
-            // Lưu con (đệ quy 1 cấp)
-            if (raw.CauHoiCon.Any())
-            {
-                foreach (var child in raw.CauHoiCon)
-                {
-                    // Update Loai cho Parent nếu chưa chuẩn (Optional)
-                    // ...
-
-                    // Gọi đệ quy nhưng truyền parentId thật
-                    // Lưu ý: Cần refactor hàm này để nhận entity cha hoặc set ParentId thủ công
-                    var childEntity = new CauHoi
-                    {
-                        NoiDung = child.NoiDung,
-                        MucDo = child.MucDo,
-                        Loai = child.Loai,
-                        HinhAnh = child.HinhAnh,
-                        ChuongId = chuongId,
-                        ParentId = entity.Id // Link với cha
-                    };
-
-                    foreach (var d in child.DapAn)
-                    {
-                        childEntity.DsCauTraLoi.Add(new CauTraLoi
-                        {
-                            NoiDung = d.NoiDung,
-                            LaDapAnDung = d.LaDapAnDung,
-                            ViTriGoc = d.ViTriGoc,
-                            DaoViTri = d.DaoViTri,
-                            HinhAnh = d.HinhAnh
-                        });
-                    }
-                    _db.CauHoi.Add(childEntity);
-                }
-                _db.SaveChanges();
-            }
-
-            MessageBox.Show("Lưu thành công!", "Thông báo");
+            MessageBox.Show("Lưu thành công!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
             DialogResult = true;
             Close();
         }
         catch (Exception ex)
         {
-            MessageBox.Show("Lỗi: " + ex.Message);
+            MessageBox.Show("Lỗi: " + ex.Message, "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 
-    private void Msg(string s) => MessageBox.Show(s, "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
-
+    private void Msg(string s) => MessageBox.Show(s, "Cảnh báo", MessageBoxButton.OK, MessageBoxImage.Warning);
     private void BtnHuy_Click(object sender, RoutedEventArgs e) => Close();
     private void Border_MouseDown(object sender, MouseButtonEventArgs e) { if (e.ChangedButton == MouseButton.Left) DragMove(); }
 
-    public event PropertyChangedEventHandler? PropertyChanged;
-}
-
-// Class ViewModel hỗ trợ binding Grid Đáp án
-public class CauTraLoiViewModel : INotifyPropertyChanged
-{
-    public string NoiDung { get; set; } = "";
-    public bool LaDapAnDung { get; set; } = false;
-    public bool DaoViTri { get; set; } = true;
-    public string? HinhAnh { get; set; }
     public event PropertyChangedEventHandler? PropertyChanged;
 }
