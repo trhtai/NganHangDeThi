@@ -44,6 +44,7 @@ từ đó đề xuất cho user nhập số lượng câu điền khuyết dựa
 	+ Có 2 loại đề: 
 		- đề chỉ 1 bộ câu hỏi và trộn thứ tự các mã đề
 		- mỗi mã đề có 1 bộ câu hỏi riêng biệt (TẠM THỜI BỎ QUA): user có thể tạo 4 đề riêng lẻ
+		- 
 17. Thêm câu hỏi thủ công
 	+ loại bỏ việc thêm ảnh
 	+ style lại
@@ -60,3 +61,15 @@ từ đó đề xuất cho user nhập số lượng câu điền khuyết dựa
 22. (FIXED) Chỉnh lại thông báo khi "thêm câu hỏi từ file", khi thêm thành công cần thông báo chính xác số câu hỏi,
 cần đếm các câu đơn và các câu hỏi con trong câu chùm, không đếm phần giả thuyết
 23. (FIXED) KHi sửa câu hỏi, nội dung show lên chưa được tô đỏ mà hiển thị "<$*> <span style='color:red'> although</span>"
+
+
+- (DONE) Quy định lại về đề gốc, sẽ có 2 loại đề:
++ Đề hoán vị: tức chỉ có 1 bộ câu hỏi, các mã đề sẽ hoán vị câu hỏi với nhau để tạo thành các mã đề khác nhau và 
+mã đề đầu tiên chính là đề gốc.
++ Đề ngẫu nhiên: tức mỗi mã đề sẽ có 1 bộ câu hỏi riêng biệt, mỗi mã đề là đề gốc.
+
+- Style lại giao diện thêm câu hỏi thủ công và kiểm thử.
+
+- Fix lỗi item combobox hiển thị sai vị trí.
+
+- Tôi ưu hiệu năng các danh sách, việc lướt các danh sách dài bị lag khá nhiều.
