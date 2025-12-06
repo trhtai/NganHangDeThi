@@ -39,19 +39,6 @@
                         <RowDefinition Height="auto"/>
                     </Grid.RowDefinitions>
 
-                    <!--<StackPanel Grid.Row="0" Orientation="Horizontal">
-                        --><!--Filter Title--><!--
-                        <TextBlock Text="Tìm kiếm" FontFamily="13" FontWeight="SemiBold" Margin="18 0 20 0"
-                            Foreground="#121518" HorizontalAlignment="Left" VerticalAlignment="Center" />
-
-                        --><!--Filter Box--><!--
-                        <Grid Width="200">
-                            <TextBox x:Name="TxtFilterBox" 
-                                 Tag="Nhập tiêu đề đề thi..."
-                                Text="{Binding TuKhoaTimKiemDeThi, UpdateSourceTrigger=PropertyChanged}" 
-                                Style="{StaticResource TextBoxFilter}" />
-                        </Grid>
-                    </StackPanel>-->
                     <StackPanel Grid.Row="0" Orientation="Horizontal">
                         <Button Background="#cccccc" Foreground="#000000" Click="BtnXoaBoLoc_Click" Width="100" Style="{StaticResource AddButton}" Margin="0 0 20 0">
                             <StackPanel Orientation="Horizontal">
@@ -60,24 +47,22 @@
                             </StackPanel>
                         </Button>
 
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="Lớp học" FontFamily="13" FontWeight="SemiBold" Margin="0 0 10 0"
-               Foreground="#121518" HorizontalAlignment="Left" VerticalAlignment="Center" />
+                        <!--<TextBlock Text="Lớp học" FontFamily="13" FontWeight="SemiBold" Margin="0 0 10 0"
+Foreground="#121518" HorizontalAlignment="Left" VerticalAlignment="Center" />
 
-                            <ComboBox Style="{StaticResource ComboBoxFlatStyle}" Width="150" Margin="0 0 20 0"
-                                  ItemsSource="{Binding DsLopHoc}"
-                                  SelectedItem="{Binding LopHocLoc, UpdateSourceTrigger=PropertyChanged}"
-                                  DisplayMemberPath="MaLop" />
-                        </StackPanel>
+                        <ComboBox Style="{StaticResource ComboBoxFlatStyle}" Width="150" Margin="0 0 20 0"
+                   ItemsSource="{Binding DsLopHoc}"
+                   SelectedItem="{Binding LopHocLoc, UpdateSourceTrigger=PropertyChanged}"
+                   DisplayMemberPath="MaLop" />-->
 
                         <TextBlock Text="Tìm kiếm" FontFamily="13" FontWeight="SemiBold" Margin="0 0 10 0"
                Foreground="#121518" HorizontalAlignment="Left" VerticalAlignment="Center" />
 
                         <Grid Width="200">
                             <TextBox x:Name="TxtFilterBox" 
-                 Tag="Nhập tiêu đề đề thi..."
-                 Text="{Binding TuKhoaTimKiemDeThi, UpdateSourceTrigger=PropertyChanged}" 
-                 Style="{StaticResource TextBoxFilter}" />
+                                 Tag="Nhập tiêu đề đề thi..."
+                                 Text="{Binding TuKhoaTimKiemDeThi, UpdateSourceTrigger=PropertyChanged}" 
+                                 Style="{StaticResource TextBoxFilter}" />
                         </Grid>
                     </StackPanel>
 
