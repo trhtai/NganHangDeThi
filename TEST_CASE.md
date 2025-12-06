@@ -72,4 +72,4 @@ mã đề đầu tiên chính là đề gốc.
 
 - Fix lỗi item combobox hiển thị sai vị trí.
 
-- Tôi ưu hiệu năng các danh sách, việc lướt các danh sách dài bị lag khá nhiều.
+- (DONE) Tôi ưu hiệu năng các danh sách, việc lướt các danh sách dài bị lag khá nhiều.

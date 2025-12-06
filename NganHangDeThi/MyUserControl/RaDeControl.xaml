@@ -70,7 +70,13 @@ Foreground="#121518" HorizontalAlignment="Left" VerticalAlignment="Center" />
                         RowStyle="{DynamicResource DataGridRowStyle1}" 
                         ColumnHeaderStyle="{DynamicResource DataGridColumnHeaderStyle1}" 
                         CellStyle="{DynamicResource DataGridCellStyle1}" 
-                        Style="{DynamicResource DataGridStyle1}">
+                        Style="{DynamicResource DataGridStyle1}"
+                              
+                            EnableRowVirtualization="True"
+                          VirtualizingPanel.IsVirtualizing="True"
+                          VirtualizingPanel.IsVirtualizingWhenGrouping="True" 
+                          VirtualizingPanel.VirtualizationMode="Recycling"
+                          VirtualizingPanel.ScrollUnit="Pixel">
 
                         <DataGrid.GroupStyle>
                             <GroupStyle>
@@ -82,7 +88,8 @@ Foreground="#121518" HorizontalAlignment="Left" VerticalAlignment="Center" />
                                                     <StackPanel>
                                                         <Expander IsExpanded="True" BorderThickness="0 0 0 1" BorderBrush="#E0E0E0">
                                                             <Expander.Header>
-                                                                <Grid Width="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type Expander}}, Path=ActualWidth}">
+                                                                <!--<Grid Width="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type Expander}}, Path=ActualWidth}">-->
+                                                                <Grid>
                                                                     <Grid.ColumnDefinitions>
                                                                         <ColumnDefinition Width="*"/>
                                                                         <ColumnDefinition Width="Auto"/>
@@ -153,7 +160,7 @@ Foreground="#121518" HorizontalAlignment="Left" VerticalAlignment="Center" />
                             <DataGridTextColumn Header="Ngày tạo" Binding="{Binding CreatedAt}" IsReadOnly="True" Width="auto" />
                             <DataGridTextColumn Header="Môn" Binding="{Binding MonHoc.TenMon}" IsReadOnly="True" Width="auto" />
                             <DataGridTextColumn Header="Lớp" Binding="{Binding LopHoc.MaLop}" IsReadOnly="True" Width="auto" />
-                            <DataGridTemplateColumn Header="Thao tác" IsReadOnly="True" Width="*">
+                            <DataGridTemplateColumn Header="Thao tác" IsReadOnly="True" Width="Auto">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <StackPanel Orientation="Horizontal">
