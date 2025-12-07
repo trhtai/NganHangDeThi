@@ -12,22 +12,17 @@ namespace NganHangDeThi.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
-                name: "LopHoc",
+                name: "Khoa",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    MaLop = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    NgayBatDau = table.Column<DateOnly>(type: "date", nullable: false),
-                    NgayKetThuc = table.Column<DateOnly>(type: "date", nullable: false),
-                    TrangThai = table.Column<int>(type: "int", nullable: false),
-                    NamHoc = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    GVCN = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    MaKhoa = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    TenKhoa = table.Column<string>(type: "nvarchar(max)", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_LopHoc", x => x.Id);
+                    table.PrimaryKey("PK_Khoa", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -46,16 +41,47 @@ namespace NganHangDeThi.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "LopHoc",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    MaLop = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    NgayBatDau = table.Column<DateOnly>(type: "date", nullable: false),
+                    NgayKetThuc = table.Column<DateOnly>(type: "date", nullable: false),
+                    TrangThai = table.Column<int>(type: "int", nullable: false),
+                    NamHoc = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    GVCN = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    KhoaId = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_LopHoc", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_LopHoc_Khoa_KhoaId",
+                        column: x => x.KhoaId,
+                        principalTable: "Khoa",
+                        principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
                 name: "MonHoc",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    TenMon = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                    TenMon = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    KhoaId = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_MonHoc", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_MonHoc_Khoa_KhoaId",
+                        column: x => x.KhoaId,
+                        principalTable: "Khoa",
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -91,6 +117,8 @@ namespace NganHangDeThi.Migrations
                     ThoiGianLamBai = table.Column<int>(type: "int", nullable: false),
                     GhiChu = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    DaThi = table.Column<bool>(type: "bit", nullable: false),
+                    BatchId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     MonHocId = table.Column<int>(type: "int", nullable: false),
                     MaTranId = table.Column<int>(type: "int", nullable: false),
                     LopHocId = table.Column<int>(type: "int", nullable: false)
@@ -334,6 +362,16 @@ namespace NganHangDeThi.Migrations
                 column: "MonHocId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_LopHoc_KhoaId",
+                table: "LopHoc",
+                column: "KhoaId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_MonHoc_KhoaId",
+                table: "MonHoc",
+                column: "KhoaId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_MonHocThuocLop_LopHocId",
                 table: "MonHocThuocLop",
                 column: "LopHocId");
@@ -379,6 +417,9 @@ namespace NganHangDeThi.Migrations
 
             migrationBuilder.DropTable(
                 name: "MonHoc");
+
+            migrationBuilder.DropTable(
+                name: "Khoa");
         }
     }
 }

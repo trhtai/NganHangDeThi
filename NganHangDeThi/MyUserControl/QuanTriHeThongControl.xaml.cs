@@ -65,6 +65,9 @@ public partial class QuanTriHeThongControl : UserControl, INotifyPropertyChanged
         _monHocView = CollectionViewSource.GetDefaultView(_dsMonHoc);
         OnPropertyChanged(nameof(MonHocView));
 
+        KhoaView = CollectionViewSource.GetDefaultView(_dsKhoa);
+        OnPropertyChanged(nameof(KhoaView));
+
         _unitOfWork = unitOfWork;
         _appDbContext = dbContext;
     }
@@ -83,6 +86,11 @@ public partial class QuanTriHeThongControl : UserControl, INotifyPropertyChanged
             NapDsMonHoc();
             _daTaiMonHoc = true;
         }
+        else if (TabKhoa.IsSelected && !_daTaiKhoa)
+        {
+            NapDsKhoa();
+            _daTaiKhoa = true;
+        }
     }
 
     private void BtnTaiLaiLopHoc_Click(object sender, RoutedEventArgs e)
@@ -97,7 +105,7 @@ public partial class QuanTriHeThongControl : UserControl, INotifyPropertyChanged
 
     private void BtnThemLopHoc_Click(object sender, RoutedEventArgs e)
     {
-        var themLopHocWindow = new ThemLopHocWindow
+        var themLopHocWindow = new ThemLopHocWindow(LayDsKhoaChoComboBox())
         {
             Owner = Window.GetWindow(this)
         };
@@ -116,7 +124,7 @@ public partial class QuanTriHeThongControl : UserControl, INotifyPropertyChanged
     {
         if (sender is Button btn && btn.Tag is LopHoc lopHoc)
         {
-            var suaWindow = new ThemLopHocWindow(lopHoc)
+            var suaWindow = new ThemLopHocWindow(lopHoc, LayDsKhoaChoComboBox())
             {
                 Owner = Window.GetWindow(this)
             };
@@ -136,6 +144,7 @@ public partial class QuanTriHeThongControl : UserControl, INotifyPropertyChanged
                 lopHocCanSua.TrangThai = suaWindow.LopHocMoi.TrangThai;
                 lopHocCanSua.NamHoc = suaWindow.LopHocMoi.NamHoc;
                 lopHocCanSua.GVCN = suaWindow.LopHocMoi.GVCN;
+                lopHocCanSua.KhoaId = suaWindow.LopHocMoi.KhoaId;
 
                 _unitOfWork.LopHocRepo.Update(lopHocCanSua);
                 _unitOfWork.Complete();
@@ -183,7 +192,7 @@ public partial class QuanTriHeThongControl : UserControl, INotifyPropertyChanged
 
     private void BtnThemMonHoc_Click(object sender, RoutedEventArgs e)
     {
-        var themMonHocWindow = new ThemMonHocWindow
+        var themMonHocWindow = new ThemMonHocWindow(LayDsKhoaChoComboBox())
         {
             Owner = Window.GetWindow(this)
         };
@@ -202,7 +211,7 @@ public partial class QuanTriHeThongControl : UserControl, INotifyPropertyChanged
     {
         if (sender is Button btn && btn.Tag is MonHoc monHoc)
         {
-            var suaWindow = new ThemMonHocWindow(monHoc)
+            var suaWindow = new ThemMonHocWindow(monHoc, LayDsKhoaChoComboBox())
             {
                 Owner = Window.GetWindow(this)
             };
@@ -217,6 +226,7 @@ public partial class QuanTriHeThongControl : UserControl, INotifyPropertyChanged
                     return;
                 }
                 monHocCanSua.TenMon = suaWindow.MonHocMoi.TenMon;
+                monHocCanSua.KhoaId = suaWindow.MonHocMoi.KhoaId;
 
                 _unitOfWork.MonHocRepo.Update(monHocCanSua);
                 _unitOfWork.Complete();
@@ -322,5 +332,74 @@ public partial class QuanTriHeThongControl : UserControl, INotifyPropertyChanged
     protected void OnPropertyChanged(string propertyName)
     {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
+
+    // Khoa
+    private bool _daTaiKhoa = false;
+    private ObservableCollection<Khoa> _dsKhoa = [];
+    public ICollectionView KhoaView { get; private set; }
+
+    private List<Khoa> LayDsKhoaChoComboBox()
+    {
+        return _unitOfWork.KhoaRepo.GetAll();
+    }
+
+    private void NapDsKhoa()
+    {
+        var ds = _unitOfWork.KhoaRepo.GetAll();
+        _dsKhoa = new ObservableCollection<Khoa>(ds);
+        KhoaView = CollectionViewSource.GetDefaultView(_dsKhoa);
+        OnPropertyChanged(nameof(KhoaView));
+    }
+
+    private void BtnTaiLaiKhoa_Click(object sender, RoutedEventArgs e) => NapDsKhoa();
+
+    private void BtnThemKhoa_Click(object sender, RoutedEventArgs e)
+    {
+        var w = new ThemHoacSuaKhoaWindow { Owner = Window.GetWindow(this) };
+        if (w.ShowDialog() == true && w.KhoaResult != null)
+        {
+            _unitOfWork.KhoaRepo.Add(w.KhoaResult);
+            _unitOfWork.Complete();
+            NapDsKhoa();
+        }
+    }
+
+    private void BtnSuaKhoa_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as Button)?.Tag is Khoa item)
+        {
+            var w = new ThemHoacSuaKhoaWindow(item) { Owner = Window.GetWindow(this) };
+            if (w.ShowDialog() == true && w.KhoaResult != null)
+            {
+                var dbItem = _unitOfWork.KhoaRepo.GetById(item.Id, false);
+                if (dbItem != null)
+                {
+                    dbItem.MaKhoa = w.KhoaResult.MaKhoa;
+                    dbItem.TenKhoa = w.KhoaResult.TenKhoa;
+                    _unitOfWork.KhoaRepo.Update(dbItem);
+                    _unitOfWork.Complete();
+                    NapDsKhoa();
+                }
+            }
+        }
+    }
+
+    private void BtnXoaKhoa_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as Button)?.Tag is Khoa item)
+        {
+            var confirm = MessageBox.Show($"Xóa khoa \"{item.TenKhoa}\" sẽ xóa liên kết của khoa này với các lớp học/môn học (dữ liệu lớp/môn vẫn còn).\nBạn có chắc chắn?", "Xác nhận", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+            if (confirm == MessageBoxResult.Yes)
+            {
+                var dbItem = _unitOfWork.KhoaRepo.GetById(item.Id, false);
+                if (dbItem != null)
+                {
+                    _unitOfWork.KhoaRepo.Delete(dbItem);
+                    _unitOfWork.Complete();
+                    NapDsKhoa();
+                }
+            }
+        }
     }
 }

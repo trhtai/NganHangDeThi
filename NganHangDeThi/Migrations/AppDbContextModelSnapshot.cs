@@ -262,6 +262,27 @@ namespace NganHangDeThi.Migrations
                     b.ToTable("DeThi");
                 });
 
+            modelBuilder.Entity("NganHangDeThi.Data.Entity.Khoa", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("MaKhoa")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TenKhoa")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Khoa");
+                });
+
             modelBuilder.Entity("NganHangDeThi.Data.Entity.LopHoc", b =>
                 {
                     b.Property<int>("Id")
@@ -276,6 +297,9 @@ namespace NganHangDeThi.Migrations
                     b.Property<string>("GVCN")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("KhoaId")
+                        .HasColumnType("int");
 
                     b.Property<string>("MaLop")
                         .IsRequired()
@@ -295,6 +319,8 @@ namespace NganHangDeThi.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("KhoaId");
 
                     b.ToTable("LopHoc");
                 });
@@ -330,11 +356,16 @@ namespace NganHangDeThi.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<int>("KhoaId")
+                        .HasColumnType("int");
+
                     b.Property<string>("TenMon")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("KhoaId");
 
                     b.ToTable("MonHoc");
                 });
@@ -478,6 +509,28 @@ namespace NganHangDeThi.Migrations
                     b.Navigation("MonHoc");
                 });
 
+            modelBuilder.Entity("NganHangDeThi.Data.Entity.LopHoc", b =>
+                {
+                    b.HasOne("NganHangDeThi.Data.Entity.Khoa", "Khoa")
+                        .WithMany("DsLopHoc")
+                        .HasForeignKey("KhoaId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Khoa");
+                });
+
+            modelBuilder.Entity("NganHangDeThi.Data.Entity.MonHoc", b =>
+                {
+                    b.HasOne("NganHangDeThi.Data.Entity.Khoa", "Khoa")
+                        .WithMany("DsMonHoc")
+                        .HasForeignKey("KhoaId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Khoa");
+                });
+
             modelBuilder.Entity("NganHangDeThi.Data.Entity.MonHocThuocLop", b =>
                 {
                     b.HasOne("NganHangDeThi.Data.Entity.LopHoc", "LopHoc")
@@ -517,6 +570,13 @@ namespace NganHangDeThi.Migrations
             modelBuilder.Entity("NganHangDeThi.Data.Entity.DeThi", b =>
                 {
                     b.Navigation("DsChiTietDeThi");
+                });
+
+            modelBuilder.Entity("NganHangDeThi.Data.Entity.Khoa", b =>
+                {
+                    b.Navigation("DsLopHoc");
+
+                    b.Navigation("DsMonHoc");
                 });
 
             modelBuilder.Entity("NganHangDeThi.Data.Entity.LopHoc", b =>

@@ -8,13 +8,17 @@ namespace NganHangDeThi;
 public partial class ThemLopHocWindow : Window
 {
     public LopHoc? LopHocMoi { get; private set; }
+    private List<Khoa> _dsKhoa = new();
 
-    public ThemLopHocWindow()
+    public ThemLopHocWindow(List<Khoa> dsKhoa)
     {
         InitializeComponent();
+
+        _dsKhoa = dsKhoa;
+        CbbKhoa.ItemsSource = _dsKhoa;
     }
 
-    public ThemLopHocWindow(LopHoc lopHocCanSua) : this()
+    public ThemLopHocWindow(LopHoc lopHocCanSua, List<Khoa> dsKhoa) : this(dsKhoa)
     {
         Title = "Sửa lớp học";
 
@@ -23,6 +27,8 @@ public partial class ThemLopHocWindow : Window
         DpNgayKetThuc.SelectedDate = lopHocCanSua.NgayKetThuc.ToDateTime(TimeOnly.MinValue);
         TxtNamHoc.Text = lopHocCanSua.NamHoc;
         TxtGVCN.Text = lopHocCanSua.GVCN;
+
+        CbbKhoa.SelectedValue = lopHocCanSua.KhoaId;
     }
 
     private void BtnLuu_Click(object sender, RoutedEventArgs e)
@@ -35,7 +41,8 @@ public partial class ThemLopHocWindow : Window
             TrangThai = TrangThaiLopHoc.DangHoc,
             NamHoc = TxtNamHoc.Text.Trim(),
             GVCN = TxtGVCN.Text.Trim(),
-            CreatedAt = DateTime.Now
+            CreatedAt = DateTime.Now,
+            KhoaId = (int)CbbKhoa.SelectedValue
         };
 
         DialogResult = true;

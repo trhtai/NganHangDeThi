@@ -16,6 +16,9 @@ public class LopHoc : IEntity<int>
     public string GVCN { get; set; } = string.Empty; // Huynh Vo Huu Tri.
     public DateTime CreatedAt { get; set; }
 
+    public int KhoaId { get; set; } // Nullable để tránh lỗi dữ liệu cũ chưa có Khoa
+    public Khoa Khoa { get; set; }
+
     public ICollection<MonHocThuocLop> DsMonHoc { get; set; } = [];
     public ICollection<DeThi> DsDeThi { get; set; } = [];
 }

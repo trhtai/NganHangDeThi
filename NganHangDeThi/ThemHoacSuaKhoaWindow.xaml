@@ -1,4 +1,4 @@
-﻿<Window x:Class="NganHangDeThi.ThemLopHocWindow"
+﻿<Window x:Class="NganHangDeThi.ThemHoacSuaKhoaWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -6,12 +6,12 @@
         xmlns:local="clr-namespace:NganHangDeThi"
         xmlns:uc="clr-namespace:NganHangDeThi.MyUserControl"
         mc:Ignorable="d"
-        Title="Thêm lớp học" Width="400"
+        Title="Thêm hoặc sửa Khoa" Width="400"
         WindowStyle="None"
         WindowStartupLocation="CenterScreen"
         AllowsTransparency="True"
         SizeToContent="Height">
-    
+
     <Border Background="#ffffff" MouseDown="Border_MouseDown">
         <Border.Effect>
             <DropShadowEffect Direction="-130" BlurRadius="30" ShadowDepth="5" Opacity="0.1"/>
@@ -22,30 +22,16 @@
                 <RowDefinition Height="auto" />
                 <RowDefinition Height="auto" />
                 <RowDefinition Height="auto" />
+                <RowDefinition Height="auto" />
             </Grid.RowDefinitions>
 
-            <!--Form Title-->
             <Grid Grid.Row="0" Margin="20 20 20 12">
-                <TextBlock TextAlignment="Center" FontWeight="SemiBold" Text="THÊM LỚP HỌC" Foreground="#374655" FontSize="18" Margin="15 0 0 0" VerticalAlignment="Center"/>
+                <TextBlock x:Name="TxtTitle" TextAlignment="Center" FontWeight="SemiBold" Text="THÊM KHOA MỚI" Foreground="#374655" FontSize="18" Margin="15 0 0 0" VerticalAlignment="Center"/>
             </Grid>
 
             <StackPanel Grid.Row="1" Orientation="Vertical">
-                <uc:MyTextBoxControl x:Name="TxtMaLop" Caption="Mã lớp" Hint="VD: DH20TIN01" />
-                <StackPanel Margin="16 8">
-                    <TextBlock Text="Khoa chủ quản" Foreground="#97A5B4" FontSize="13" Margin="0 0 0 8"/>
-                    <ComboBox x:Name="CbbKhoa" Style="{StaticResource ComboBoxFlatStyle}" 
-                              DisplayMemberPath="TenKhoa" SelectedValuePath="Id" Height="40"/>
-                </StackPanel>
-                <StackPanel Margin="16 8">
-                    <TextBlock Text="Ngày bắt đầu" Foreground="#97A5B4" FontSize="13" Margin="0 0 0 8"/>
-                    <DatePicker x:Name="DpNgayBatDau" Style="{StaticResource myDatePicker}" />
-                </StackPanel>
-                <StackPanel Margin="16 8">
-                    <TextBlock Text="Ngày kết thúc" Foreground="#97A5B4" FontSize="13" Margin="0 0 0 8"/>
-                    <DatePicker x:Name="DpNgayKetThuc" Style="{StaticResource myDatePicker}" />
-                </StackPanel>
-                <uc:MyTextBoxControl x:Name="TxtNamHoc" Caption="Năm học" Hint="VD: 2019-2024" />
-                <uc:MyTextBoxControl x:Name="TxtGVCN" Caption="GVCN" Hint="Nhập tên giáo viên chủ nhiệm" />
+                <uc:MyTextBoxControl x:Name="TxtMaKhoa" Caption="Mã khoa" Hint="VD: CNTT, KT..." />
+                <uc:MyTextBoxControl x:Name="TxtTenKhoa" Caption="Tên khoa" Hint="VD: Công nghệ thông tin..." />
             </StackPanel>
 
             <Border Height="60" Grid.Row="2" Background="#f6f6f6" Margin="0 10 0 0">
@@ -61,7 +47,7 @@
                         </Button.Effect>
                     </Button>
 
-                    <Button Grid.Row="0" Content="Hủy" HorizontalAlignment="Left" Margin="20 0 0 0" Style="{StaticResource BackButton}" Width="150" Click="Button_Click"/>
+                    <Button Grid.Row="0" Content="Hủy" HorizontalAlignment="Left" Margin="20 0 0 0" Style="{StaticResource BackButton}" Width="150" Click="BtnHuy_Click"/>
                 </Grid>
             </Border>
         </Grid>

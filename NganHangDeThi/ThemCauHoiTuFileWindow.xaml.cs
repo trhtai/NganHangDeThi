@@ -200,7 +200,7 @@ public partial class ThemCauHoiTuFileWindow : Window, INotifyPropertyChanged
 
     private void BtnThemMonNhanh_Click(object sender, RoutedEventArgs e)
     {
-        var window = new ThemMonHocWindow
+        var window = new ThemMonHocWindow(new List<Khoa>())
         {
             Owner = this
         };

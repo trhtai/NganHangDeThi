@@ -30,6 +30,11 @@
             </Grid>
 
             <StackPanel Grid.Row="1" Orientation="Vertical">
+                <StackPanel Margin="16 0 16 8">
+                    <TextBlock Text="Khoa phụ trách" Foreground="#97A5B4" FontSize="13" Margin="0 0 0 8"/>
+                    <ComboBox x:Name="CbbKhoa" Style="{StaticResource ComboBoxFlatStyle}" 
+                              DisplayMemberPath="TenKhoa" SelectedValuePath="Id" Height="40"/>
+                </StackPanel>
                 <uc:MyTextBoxControl x:Name="TxtTenMon" Caption="Tên môn" Hint="Nhập tên môn học" />
             </StackPanel>
 

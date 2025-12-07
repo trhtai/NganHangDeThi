@@ -241,7 +241,7 @@ public partial class ThemHoacSuaMaTranWindow : Window, INotifyPropertyChanged
     // 1. Hàm xử lý thêm nhanh Môn Học
     private void BtnThemMonNhanh_Click(object sender, RoutedEventArgs e)
     {
-        var window = new ThemMonHocWindow
+        var window = new ThemMonHocWindow(new List<Khoa>())
         {
             Owner = this
         };

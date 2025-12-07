@@ -6,6 +6,7 @@ namespace NganHangDeThi.Data.DataContext;
 
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
+    public required DbSet<Khoa> Khoa { get; set; }
     public required DbSet<LopHoc> LopHoc { get; set; }
     public required DbSet<MonHoc> MonHoc { get; set; }
     public required DbSet<MonHocThuocLop> MonHocThuocLop { get; set; }

@@ -9,5 +9,8 @@ public class MonHoc : IEntity<int>
     public int Id { get; set; }
     public string TenMon { get; set; } = string.Empty;
 
+    public int KhoaId { get; set; }
+    public Khoa Khoa { get; set; }
+
     public ICollection<Chuong> DsChuong { get; set; } = [];
 }

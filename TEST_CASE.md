@@ -68,8 +68,10 @@ cần đếm các câu đơn và các câu hỏi con trong câu chùm, không đ
 mã đề đầu tiên chính là đề gốc.
 + Đề ngẫu nhiên: tức mỗi mã đề sẽ có 1 bộ câu hỏi riêng biệt, mỗi mã đề là đề gốc.
 
-- Style lại giao diện thêm câu hỏi thủ công và kiểm thử.
+- (DONE) Style lại giao diện thêm câu hỏi thủ công và kiểm thử.
 
 - Fix lỗi item combobox hiển thị sai vị trí.
 
 - (DONE) Tôi ưu hiệu năng các danh sách, việc lướt các danh sách dài bị lag khá nhiều.
+
+- Quản lí các lớp và môn theo khoa, có thể lọc.

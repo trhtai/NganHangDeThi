@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using NganHangDeThi.Data.DataContext;
+using NganHangDeThi.Repository.KhoaRepos;
 using NganHangDeThi.Repository.LopHocRepos;
 using NganHangDeThi.Repository.MonHocRepos;
 
@@ -12,9 +13,11 @@ public class UnitOfWork(AppDbContext context) : IUnitOfWork
 
     private IMonHocRepo? _monHocRepo;
     private ILopHocRepo? _lopHocRepo;
+    private IKhoaRepo? _khoaRepo;
 
     public IMonHocRepo MonHocRepo { get => _monHocRepo ??= new MonHocRepo(_context); }
     public ILopHocRepo LopHocRepo { get => _lopHocRepo ??= new LopHocRepo(_context); }
+    public IKhoaRepo KhoaRepo { get => _khoaRepo ??= new KhoaRepo(_context); }
 
     public IDbContextTransaction BeginTransaction()
     {
