@@ -3,16 +3,21 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:converters="clr-namespace:NganHangDeThi.Converters"
         xmlns:Icon="http://metro.mahapps.com/winfx/xaml/iconpacks"
         mc:Ignorable="d"
-        Title="Thêm câu hỏi thủ công" Height="900" Width="1200"
+        Title="Thêm câu hỏi thủ công" Height="800" Width="1200"
         WindowStartupLocation="CenterScreen" WindowStyle="None"
         AllowsTransparency="True" Background="Transparent">
 
     <Window.Resources>
+        <converters:IndexConverter x:Key="IndexConverter" />
+        <converters:HtmlDisplayConverter x:Key="HtmlDisplayConverter" />
+        <converters:EnumDescriptionConverter x:Key="EnumDescriptionConverter" />
+        
         <Style x:Key="ToolbarButton" TargetType="Button">
-            <Setter Property="Width" Value="30"/>
-            <Setter Property="Height" Value="30"/>
+            <Setter Property="Width" Value="32"/>
+            <Setter Property="Height" Value="32"/>
             <Setter Property="Margin" Value="2,0"/>
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderThickness" Value="0"/>
@@ -45,63 +50,74 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
-            <TextBlock Text="Thêm câu hỏi thủ công" FontSize="24" FontWeight="SemiBold" 
+            <TextBlock Text="Thêm câu hỏi thủ công" Grid.Row="0" FontSize="24" FontWeight="SemiBold" 
                        Foreground="#121518" Margin="0 0 0 15"/>
 
-            <Border Grid.Row="1" Background="White" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="5" Padding="5" Margin="0 0 0 10">
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="Định dạng:" VerticalAlignment="Center" Margin="5,0,10,0" FontWeight="SemiBold" Foreground="#666"/>
-
-                    <Button Command="EditingCommands.ToggleBold" ToolTip="In đậm (Ctrl+B)" Style="{StaticResource ToolbarButton}">
-                        <TextBlock Text="B" FontWeight="Bold"/>
-                    </Button>
-                    <Button Command="EditingCommands.ToggleItalic" ToolTip="In nghiêng (Ctrl+I)" Style="{StaticResource ToolbarButton}">
-                        <TextBlock Text="I" FontStyle="Italic" FontWeight="Bold" FontFamily="Serif"/>
-                    </Button>
-                    <Button Command="EditingCommands.ToggleUnderline" ToolTip="Gạch chân (Ctrl+U)" Style="{StaticResource ToolbarButton}">
-                        <TextBlock Text="U" TextDecorations="Underline" FontWeight="Bold"/>
-                    </Button>
-                    <Rectangle Width="1" Height="20" Fill="#CCC" Margin="5,0"/>
-
-                    <Button Command="EditingCommands.ToggleSubscript" ToolTip="Chỉ số dưới" Style="{StaticResource ToolbarButton}">
-                        <TextBlock Text="X₂"/>
-                    </Button>
-                    <Button Command="EditingCommands.ToggleSuperscript" ToolTip="Chỉ số trên" Style="{StaticResource ToolbarButton}">
-                        <TextBlock Text="X²"/>
-                    </Button>
-
-                    <Rectangle Width="1" Height="20" Fill="#CCC" Margin="5,0"/>
-
-                    <Button Click="BtnToDo_Click" ToolTip="Tô đỏ văn bản" Style="{StaticResource ToolbarButton}">
-                        <Icon:PackIconMaterial Kind="FormatColorText" Foreground="Red" />
-                    </Button>
-                    <Button Click="BtnXoaMau_Click" ToolTip="Xóa màu (Về đen)" Style="{StaticResource ToolbarButton}">
-                        <Icon:PackIconMaterial Kind="FormatColorText" Foreground="Black" />
-                    </Button>
-
-                    <TextBlock Text="(Chọn văn bản rồi nhấn nút)" VerticalAlignment="Center" Margin="10,0,0,0" FontStyle="Italic" Foreground="#999" FontSize="11"/>
-                </StackPanel>
-            </Border>
-
-            <Grid Grid.Row="2" Margin="0 0 0 10">
+            <Grid Grid.Row="1" Margin="0 0 0 10">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
+
                 <StackPanel Grid.Column="0" Margin="0 0 10 0">
                     <TextBlock Text="Môn học" FontWeight="SemiBold" Margin="0 0 0 5"/>
                     <ComboBox x:Name="CbbMonHoc" Style="{StaticResource ComboBoxFlatStyle}" Height="35"
                               DisplayMemberPath="TenMon" SelectionChanged="CbbMonHoc_SelectionChanged"/>
                 </StackPanel>
-                <StackPanel Grid.Column="1" Margin="10 0 0 0">
+
+                <StackPanel Grid.Column="1" Margin="5 0 5 0">
                     <TextBlock Text="Chương" FontWeight="SemiBold" Margin="0 0 0 5"/>
                     <ComboBox x:Name="CbbChuong" Style="{StaticResource ComboBoxFlatStyle}" Height="35"
                               DisplayMemberPath="TenChuong"/>
                 </StackPanel>
+
+                <StackPanel Grid.Column="2" Margin="10 0 0 0">
+                    <TextBlock Text="Mức độ khó" FontWeight="SemiBold" Margin="0 0 0 5"/>
+                    <ComboBox x:Name="CbbMucDo" Style="{StaticResource ComboBoxFlatStyle}" Height="35"
+                              DisplayMemberPath="Value" SelectedValuePath="Key"/>
+                </StackPanel>
             </Grid>
 
+            <Border Grid.Row="2" Background="White" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="5" Padding="5" Margin="0 0 0 10">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="Công cụ soạn thảo:" VerticalAlignment="Center" Margin="5,0,10,0" FontWeight="SemiBold" Foreground="#666"/>
+
+                    <Button Command="EditingCommands.ToggleBold" ToolTip="In đậm (Ctrl+B)" Style="{StaticResource ToolbarButton}">
+                        <TextBlock Text="B" FontWeight="Bold" FontSize="14"/>
+                    </Button>
+                    <Button Command="EditingCommands.ToggleItalic" ToolTip="In nghiêng (Ctrl+I)" Style="{StaticResource ToolbarButton}">
+                        <TextBlock Text="I" FontStyle="Italic" FontWeight="Bold" FontFamily="Serif" FontSize="14"/>
+                    </Button>
+                    <Button Command="EditingCommands.ToggleUnderline" ToolTip="Gạch chân (Ctrl+U)" Style="{StaticResource ToolbarButton}">
+                        <TextBlock Text="U" TextDecorations="Underline" FontWeight="Bold" FontSize="14"/>
+                    </Button>
+
+                    <Rectangle Width="1" Height="20" Fill="#CCC" Margin="5,0"/>
+
+                    <Button Command="EditingCommands.ToggleSubscript" ToolTip="Chỉ số dưới" Style="{StaticResource ToolbarButton}">
+                        <TextBlock Text="X₂" FontWeight="Bold"/>
+                    </Button>
+                    <Button Command="EditingCommands.ToggleSuperscript" ToolTip="Chỉ số trên" Style="{StaticResource ToolbarButton}">
+                        <TextBlock Text="X²" FontWeight="Bold"/>
+                    </Button>
+
+                    <Rectangle Width="1" Height="20" Fill="#CCC" Margin="5,0"/>
+
+                    <Button Click="BtnToDo_Click" ToolTip="Tô đỏ văn bản đang chọn" Style="{StaticResource ToolbarButton}">
+                        <Icon:PackIconMaterial Kind="FormatColorText" Foreground="Red" />
+                    </Button>
+                    <Button Click="BtnXoaMau_Click" ToolTip="Xóa màu (Về mặc định)" Style="{StaticResource ToolbarButton}">
+                        <Icon:PackIconMaterial Kind="FormatColorText" Foreground="Black" />
+                    </Button>
+
+                    <TextBlock Text="(Bôi đen văn bản rồi chọn nút)" VerticalAlignment="Center" Margin="15,0,0,0" FontStyle="Italic" Foreground="#999" FontSize="11"/>
+                </StackPanel>
+            </Border>
+
             <TabControl Name="TabControl" Grid.Row="3" Style="{StaticResource TabControlStyle}">
-                <TabItem Header="Câu hỏi đơn" Style="{StaticResource TabItemStyle}">
+
+                <TabItem Header="Trắc nghiệm" Style="{StaticResource TabItemStyle}">
                     <Grid Margin="0 10 0 0">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
@@ -109,27 +125,16 @@
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
 
-                        <Grid Grid.Row="0" Margin="0 0 0 10">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Margin="0 0 10 0">
-                                <TextBlock Text="Mức độ" Foreground="#888" Margin="0 0 0 5"/>
-                                <ComboBox x:Name="CbbMucDoDon" Style="{StaticResource ComboBoxFlatStyle}" Height="35"
-                                          DisplayMemberPath="Value" SelectedValuePath="Key"/>
-                            </StackPanel>
-                            <StackPanel Grid.Column="1" Margin="10 0 0 0">
-                                <TextBlock Text="Loại câu hỏi" Foreground="#888" Margin="0 0 0 5"/>
-                                <ComboBox x:Name="CbbLoaiDon" Style="{StaticResource ComboBoxFlatStyle}" Height="35"
-                                          DisplayMemberPath="Value" SelectedValuePath="Key"/>
-                            </StackPanel>
-                        </Grid>
+                        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0 0 0 10">
+                            <TextBlock Text="Loại trắc nghiệm:" VerticalAlignment="Center" FontWeight="SemiBold" Margin="0 0 10 0"/>
+                            <RadioButton Content="1 Đáp án đúng" IsChecked="{Binding IsOneChoice}" GroupName="TnType" Margin="0 0 15 0"/>
+                            <RadioButton Content="Nhiều đáp án đúng" IsChecked="{Binding IsMultiChoice}" GroupName="TnType"/>
+                        </StackPanel>
 
                         <StackPanel Grid.Row="1" Margin="0 0 0 15">
-                            <TextBlock Text="Nội dung câu hỏi" FontWeight="SemiBold" Margin="0,0,0,5"/>
-                            <Border BorderThickness="1" BorderBrush="#E1E6EB" CornerRadius="5" Background="White" Height="100">
-                                <RichTextBox x:Name="RtbNoiDungDon" Padding="10" BorderThickness="0" Background="Transparent"
+                            <TextBlock Text="Nội dung câu hỏi:" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                            <Border BorderThickness="1" BorderBrush="#E1E6EB" CornerRadius="5" Background="White" Height="120">
+                                <RichTextBox x:Name="RtbCauHoiTN" Padding="10" BorderThickness="0" Background="Transparent"
                                              AcceptsReturn="True" VerticalScrollBarVisibility="Auto">
                                     <FlowDocument>
                                         <Paragraph>
@@ -147,32 +152,35 @@
                                     <RowDefinition Height="Auto"/>
                                 </Grid.RowDefinitions>
 
-                                <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="250">
-                                    <ItemsControl x:Name="IcDapAnDon" ItemsSource="{Binding DsDapAnViewModel}">
+                                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                    <ItemsControl x:Name="IcDapAnTN" ItemsSource="{Binding DsDapAnTN}">
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
                                                 <Grid Margin="0,0,0,10">
                                                     <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="40"/>
                                                         <ColumnDefinition Width="*"/>
-                                                        <ColumnDefinition Width="Auto"/>
-                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="60"/>
+                                                        <ColumnDefinition Width="40"/>
                                                     </Grid.ColumnDefinitions>
 
-                                                    <CheckBox IsChecked="{Binding LaDapAnDung}" ToolTip="Là đáp án đúng" VerticalAlignment="Top" Margin="0,8,10,0"/>
+                                                    <CheckBox IsChecked="{Binding LaDapAnDung}" ToolTip="Là đáp án đúng" 
+                                                              HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,10,0,0"/>
 
-                                                    <Border Grid.Column="1" BorderThickness="1" BorderBrush="#E1E6EB" CornerRadius="5" Background="White" MinHeight="40">
-                                                        <RichTextBox Padding="5" BorderThickness="0" Background="Transparent" Loaded="RichTextBox_Loaded">
+                                                    <Border Grid.Column="1" BorderThickness="1" BorderBrush="#E1E6EB" CornerRadius="5" Background="White" MinHeight="45">
+                                                        <RichTextBox Padding="5" BorderThickness="0" Background="Transparent" 
+                                                                     Loaded="RichTextBox_Loaded"
+                                                                     Tag="{Binding}">
                                                         </RichTextBox>
                                                     </Border>
 
-                                                    <StackPanel Grid.Column="2" Orientation="Vertical" VerticalAlignment="Top" Margin="10,8,0,0">
+                                                    <StackPanel Grid.Column="2" Orientation="Vertical" VerticalAlignment="Top" Margin="10,10,0,0">
                                                         <CheckBox IsChecked="{Binding DaoViTri}" Content="Trộn" FontSize="11"/>
                                                     </StackPanel>
 
                                                     <Button Grid.Column="3" Style="{StaticResource GridRemoveButton}" 
-                                                            Click="BtnXoaDapAn_Click" VerticalAlignment="Top" Margin="10,5,0,0"
-                                                            Tag="{Binding}">
+                                                            Click="BtnXoaDapAnTN_Click" VerticalAlignment="Top" Margin="5,5,0,0"
+                                                            Tag="{Binding}" ToolTip="Xóa đáp án này">
                                                         <Icon:PackIconMaterial Kind="Close" Width="10" Height="10"/>
                                                     </Button>
                                                 </Grid>
@@ -181,18 +189,210 @@
                                     </ItemsControl>
                                 </ScrollViewer>
 
-                                <Button Grid.Row="1" Content="Thêm đáp án" HorizontalAlignment="Left" Margin="0 10 0 0"
-                                        Style="{StaticResource AddButton}" Width="120" Click="BtnThemDapAn_Click"/>
+                                <Button Grid.Row="1" Content="Thêm dòng đáp án" HorizontalAlignment="Left" Margin="0 10 0 0"
+                                        Style="{StaticResource AddButton}" Width="140" Click="BtnThemDapAnTN_Click">
+                                    <Button.ContentTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal">
+                                                <Icon:PackIconMaterial Kind="Plus" VerticalAlignment="Center" Margin="0 0 5 0"/>
+                                                <TextBlock Text="Thêm đáp án"/>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </Button.ContentTemplate>
+                                </Button>
                             </Grid>
                         </GroupBox>
                     </Grid>
                 </TabItem>
 
-                <TabItem Header="Câu chùm (Tạm ẩn)" Visibility="Collapsed"/>
+                <TabItem Header="Tự luận" Style="{StaticResource TabItemStyle}">
+                    <Grid Margin="0 10 0 0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="10"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <GroupBox Grid.Row="0" Header="Nội dung câu hỏi" BorderBrush="#E0E0E0" Padding="5">
+                            <Border BorderThickness="1" BorderBrush="#E1E6EB" CornerRadius="5" Background="White">
+                                <RichTextBox x:Name="RtbCauHoiTL" Padding="10" BorderThickness="0" Background="Transparent"
+                             AcceptsReturn="True" VerticalScrollBarVisibility="Auto">
+                                    <FlowDocument>
+                                        <Paragraph>
+                                            <Run Text=""/>
+                                        </Paragraph>
+                                    </FlowDocument>
+                                </RichTextBox>
+                            </Border>
+                        </GroupBox>
+
+                        <GroupBox Grid.Row="2" Header="Đáp án / Hướng dẫn chấm (Gợi ý)" BorderBrush="#E0E0E0" Padding="5">
+                            <Border BorderThickness="1" BorderBrush="#E1E6EB" CornerRadius="5" Background="White">
+                                <RichTextBox x:Name="RtbDapAnTL" Padding="10" BorderThickness="0" Background="Transparent"
+                             AcceptsReturn="True" VerticalScrollBarVisibility="Auto">
+                                    <FlowDocument>
+                                        <Paragraph>
+                                            <Run Text=""/>
+                                        </Paragraph>
+                                    </FlowDocument>
+                                </RichTextBox>
+                            </Border>
+                        </GroupBox>
+                    </Grid>
+                </TabItem>
+                <TabItem Header="Điền khuyết" Style="{StaticResource TabItemStyle}">
+                    <Grid Margin="0 10 0 0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Text="💡 Hướng dẫn: Nhập nội dung câu hỏi và dùng ký tự ba dấu gạch dưới '___' để biểu thị chỗ trống." 
+                   FontStyle="Italic" Foreground="#666" Margin="0 0 0 10" TextWrapping="Wrap"/>
+
+                        <GroupBox Grid.Row="1" Header="Nội dung câu hỏi (Đoạn văn)" BorderBrush="#E0E0E0" Padding="5">
+                            <Border BorderThickness="1" BorderBrush="#E1E6EB" CornerRadius="5" Background="White">
+                                <RichTextBox x:Name="RtbCauHoiDK" Padding="10" BorderThickness="0" Background="Transparent"
+                             AcceptsReturn="True" VerticalScrollBarVisibility="Auto">
+                                    <FlowDocument>
+                                        <Paragraph>
+                                            <Run Text=""/>
+                                        </Paragraph>
+                                    </FlowDocument>
+                                </RichTextBox>
+                            </Border>
+                        </GroupBox>
+
+                        <GridSplitter Grid.Row="2" Height="5" HorizontalAlignment="Stretch" Background="Transparent"/>
+
+                        <GroupBox Grid.Row="3" Header="Đáp án cho từng chỗ trống" BorderBrush="#E0E0E0" Padding="5">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                    <ItemsControl x:Name="IcDapAnDK" ItemsSource="{Binding DsDapAnDK}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Grid Margin="0,0,0,10">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+
+                                                    <TextBlock Text="{Binding SttHienThi}" VerticalAlignment="Top" Margin="0,10,10,0" FontWeight="Bold" Foreground="#555"/>
+
+                                                    <Border Grid.Column="1" BorderThickness="1" BorderBrush="#E1E6EB" CornerRadius="5" Background="White" MinHeight="40">
+                                                        <RichTextBox Padding="5" BorderThickness="0" Background="Transparent" 
+                                                     Loaded="RichTextBox_Loaded" Tag="{Binding}"/>
+                                                    </Border>
+
+                                                    <Button Grid.Column="2" Style="{StaticResource GridRemoveButton}" 
+                                            Click="BtnXoaDapAnDK_Click" VerticalAlignment="Top" Margin="5,5,0,0"
+                                            Tag="{Binding}" ToolTip="Xóa đáp án này">
+                                                        <Icon:PackIconMaterial Kind="Close" Width="10" Height="10"/>
+                                                    </Button>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </ScrollViewer>
+
+                                <Button Grid.Row="1" Content="Thêm chỗ trống" HorizontalAlignment="Left" Margin="0 10 0 0"
+                        Style="{StaticResource AddButton}" Width="140" Click="BtnThemDapAnDK_Click">
+                                    <Button.ContentTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal">
+                                                <Icon:PackIconMaterial Kind="Plus" VerticalAlignment="Center" Margin="0 0 5 0"/>
+                                                <TextBlock Text="Thêm từ điền"/>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </Button.ContentTemplate>
+                                </Button>
+                            </Grid>
+                        </GroupBox>
+                    </Grid>
+                </TabItem>
+
+                <TabItem Header="Câu chùm" Style="{StaticResource TabItemStyle}">
+                    <Grid Margin="0 10 0 0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="10"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <GroupBox Grid.Row="0" Header="Đoạn văn / Giả thuyết chung" BorderBrush="#E0E0E0" Padding="5">
+                            <Border BorderThickness="1" BorderBrush="#E1E6EB" CornerRadius="5" Background="White">
+                                <RichTextBox x:Name="RtbCauHoiChum" Padding="10" BorderThickness="0" Background="Transparent"
+                             AcceptsReturn="True" VerticalScrollBarVisibility="Auto">
+                                    <FlowDocument>
+                                        <Paragraph>
+                                            <Run Text=""/>
+                                        </Paragraph>
+                                    </FlowDocument>
+                                </RichTextBox>
+                            </Border>
+                        </GroupBox>
+
+                        <GroupBox Grid.Row="2" Header="Danh sách câu hỏi con" BorderBrush="#E0E0E0" Padding="5">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+
+                                <StackPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0 0 0 5">
+                                    <Button Content="Thêm câu hỏi con" Style="{StaticResource AddButton}" Width="150" Click="BtnThemCauCon_Click">
+                                        <Button.ContentTemplate>
+                                            <DataTemplate>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <Icon:PackIconMaterial Kind="Plus" VerticalAlignment="Center" Margin="0 0 5 0"/>
+                                                    <TextBlock Text="Thêm câu hỏi con"/>
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </Button.ContentTemplate>
+                                    </Button>
+                                </StackPanel>
+
+                                <DataGrid Grid.Row="1" x:Name="DgCauHoiCon" AutoGenerateColumns="False" CanUserAddRows="False"
+                          ItemsSource="{Binding DsCauHoiCon}"
+                          Style="{StaticResource DataGridStyle1}"
+                          RowStyle="{StaticResource DataGridRowStyle1}"
+                          ColumnHeaderStyle="{StaticResource DataGridColumnHeaderStyle1}"
+                          CellStyle="{StaticResource DataGridCellStyle1}">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="#" Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Converter={StaticResource IndexConverter}}" Width="40"/>
+
+                                        <DataGridTextColumn Header="Nội dung câu hỏi" Binding="{Binding NoiDung, Converter={StaticResource HtmlDisplayConverter}}" Width="*"/>
+
+                                        <DataGridTextColumn Header="Mức độ" Binding="{Binding MucDo, Converter={StaticResource EnumDescriptionConverter}}" Width="100"/>
+
+                                        <DataGridTemplateColumn Header="Thao tác" Width="60">
+                                            <DataGridTemplateColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <Button Style="{StaticResource GridRemoveButton}" Click="BtnXoaCauCon_Click" ToolTip="Xóa">
+                                                        <Icon:PackIconMaterial Kind="Close" Width="10" Height="10"/>
+                                                    </Button>
+                                                </DataTemplate>
+                                            </DataGridTemplateColumn.CellTemplate>
+                                        </DataGridTemplateColumn>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                            </Grid>
+                        </GroupBox>
+                    </Grid>
+                </TabItem>
+
             </TabControl>
 
-            <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0 10 0 0">
-                <Button Content="Hủy" Style="{StaticResource BackButton}" Margin="0 0 15 0" Click="BtnHuy_Click"/>
+            <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0 15 0 0">
+                <Button Content="Hủy bỏ" Style="{StaticResource BackButton}" Margin="0 0 15 0" Click="BtnHuy_Click"/>
                 <Button Content="Lưu câu hỏi" Style="{StaticResource SaveButton}" Click="BtnLuu_Click"/>
             </StackPanel>
         </Grid>
