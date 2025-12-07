@@ -88,7 +88,8 @@ public partial class ThemDeThiWindow : Window, INotifyPropertyChanged
 
     private void BtnThemLopHocNhanh_Click(object sender, RoutedEventArgs e)
     {
-        var window = new ThemLopHocWindow(new List<Khoa>()) { Owner = this };
+        var dsKhoa = _dbContext.Khoa.OrderBy(k => k.TenKhoa).ToList();
+        var window = new ThemLopHocWindow(dsKhoa) { Owner = this };
         if (window.ShowDialog() == true && window.LopHocMoi != null)
         {
             _dbContext.LopHoc.Add(window.LopHocMoi);

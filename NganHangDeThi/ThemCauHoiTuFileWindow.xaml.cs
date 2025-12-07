@@ -200,7 +200,8 @@ public partial class ThemCauHoiTuFileWindow : Window, INotifyPropertyChanged
 
     private void BtnThemMonNhanh_Click(object sender, RoutedEventArgs e)
     {
-        var window = new ThemMonHocWindow(new List<Khoa>())
+        var dsKhoa = _db.Khoa.OrderBy(k => k.TenKhoa).ToList();
+        var window = new ThemMonHocWindow(dsKhoa)
         {
             Owner = this
         };

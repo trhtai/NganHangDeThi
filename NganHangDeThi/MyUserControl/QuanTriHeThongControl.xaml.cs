@@ -1,4 +1,5 @@
-﻿using NganHangDeThi.Data.DataContext;
+﻿using Microsoft.EntityFrameworkCore;
+using NganHangDeThi.Data.DataContext;
 using NganHangDeThi.Data.Entity;
 using NganHangDeThi.Repository.UnitOfWorks;
 using System.Collections.ObjectModel;
@@ -317,12 +318,12 @@ public partial class QuanTriHeThongControl : UserControl, INotifyPropertyChanged
 
     private List<LopHoc> LayDsLopHoc()
     {
-        return _unitOfWork.LopHocRepo.GetAll();
+        return _unitOfWork.LopHocRepo.GetAll(includeFunc: q => q.Include(l => l.Khoa));
     }
 
     private List<MonHoc> LayDsMonHoc()
     {
-        return _unitOfWork.MonHocRepo.GetAll();
+        return _unitOfWork.MonHocRepo.GetAll(includeFunc: q => q.Include(m => m.Khoa));
     }
 
     #endregion

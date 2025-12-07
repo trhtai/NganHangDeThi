@@ -30,6 +30,60 @@
 
         <!--Tab control-->
         <TabControl Grid.Row="1" Style="{StaticResource TabControlStyle}" SelectionChanged="TabControl_SelectionChanged">
+
+            <TabItem x:Name="TabKhoa" Header="Khoa" Style="{StaticResource TabItemStyle}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <StackPanel HorizontalAlignment="Right" Orientation="Horizontal" Grid.Row="0">
+                        <Button Name="BtnTaiLaiKhoa" Click="BtnTaiLaiKhoa_Click" Style="{StaticResource AddButton}" Margin="0 0 4 0">
+                            <StackPanel Orientation="Horizontal">
+                                <Icon:PackIconMaterial Kind="Refresh" VerticalAlignment="Center" Width="11" Height="11" Margin="0 1 8 0" />
+                                <TextBlock Text="Tải lại" />
+                            </StackPanel>
+                        </Button>
+
+                        <Button Name="BtnThemKhoa" Click="BtnThemKhoa_Click" Style="{StaticResource AddButton}">
+                            <StackPanel Orientation="Horizontal">
+                                <Icon:PackIconMaterial Kind="Plus" VerticalAlignment="Center" Width="11" Height="11" Margin="0 1 8 0" />
+                                <TextBlock Text="Thêm" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+
+                    <DataGrid ItemsSource="{Binding KhoaView}" Grid.Row="1"
+                              RowStyle="{DynamicResource DataGridRowStyle1}" 
+                              ColumnHeaderStyle="{DynamicResource DataGridColumnHeaderStyle1}" 
+                              CellStyle="{DynamicResource DataGridCellStyle1}" 
+                              Style="{DynamicResource DataGridStyle1}" 
+                              AutoGenerateColumns="False">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="#" Binding="{Binding Id}" Visibility="Collapsed" IsReadOnly="True" />
+                            <DataGridTextColumn Header="Mã khoa" Binding="{Binding MaKhoa}" IsReadOnly="True" Width="150" />
+                            <DataGridTextColumn Header="Tên khoa" Binding="{Binding TenKhoa}" IsReadOnly="True" Width="*" />
+
+                            <DataGridTemplateColumn Header="Thao tác" IsReadOnly="True" Width="100">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                            <Button Name="BtnSuaKhoa" Click="BtnSuaKhoa_Click" Style="{StaticResource GridEditButton}" Tag="{Binding}" ToolTip="Sửa">
+                                                <Icon:PackIconMaterial Kind="PencilOffOutline" Style="{StaticResource GridButtonIcon}" />
+                                            </Button>
+                                            <Button Name="BtnXoaKhoa" Click="BtnXoaKhoa_Click" Style="{StaticResource GridRemoveButton}" Tag="{Binding}" ToolTip="Xóa" Margin="5 0 0 0">
+                                                <Icon:PackIconMaterial Kind="DeleteOffOutline" Style="{StaticResource GridButtonIcon}" />
+                                            </Button>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </TabItem>
+
             <TabItem x:Name="TabLopHoc" Header="Lớp học" Style="{StaticResource TabItemStyle}">
                 <Grid>
                     <Grid.RowDefinitions>
@@ -38,11 +92,8 @@
                     </Grid.RowDefinitions>
 
                     <StackPanel Orientation="Horizontal" Grid.Row="0">
-                        <!--Filter Title-->
                         <TextBlock Text="Tìm kiếm" FontFamily="13" FontWeight="SemiBold" Margin="0 0 10 0"
                                     Foreground="#121518" HorizontalAlignment="Left" VerticalAlignment="Center" />
-
-                        <!--Filter Box-->
                         <Grid Width="200">
                             <TextBox x:Name="TxtFilterBox" 
                                      Tag="Nhập tên môn học..."
@@ -52,15 +103,13 @@
                     </StackPanel>
 
                     <StackPanel HorizontalAlignment="Right" Orientation="Horizontal" Grid.Row="0">
-                        <!--Refresh Button-->
                         <Button Name="BtnTaiLaiLopHoc" Click="BtnTaiLaiLopHoc_Click" Style="{StaticResource AddButton}" Margin="0 0 4 0">
                             <StackPanel Orientation="Horizontal">
                                 <Icon:PackIconMaterial Kind="Refresh" VerticalAlignment="Center" Width="11" Height="11" Margin="0 1 8 0" />
                                 <TextBlock Text="Tải lại" />
                             </StackPanel>
                         </Button>
-                        
-                        <!--Add Button-->
+
                         <Button Name="BtnThemLopHoc" Click="BtnThemLopHoc_Click" Style="{StaticResource AddButton}">
                             <StackPanel Orientation="Horizontal">
                                 <Icon:PackIconMaterial Kind="Plus" VerticalAlignment="Center" Width="11" Height="11" Margin="0 1 8 0" />
@@ -77,6 +126,8 @@
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="#" Binding="{Binding Id}" Visibility="Collapsed" IsReadOnly="True" CanUserResize="False" Width="auto" />
                             <DataGridTextColumn Header="Mã lớp" Binding="{Binding MaLop}" IsReadOnly="True" Width="auto" />
+
+                            <DataGridTextColumn Header="Khoa" Binding="{Binding Khoa.TenKhoa}" IsReadOnly="True" Width="auto"/>
                             <DataGridTextColumn Header="Bắt đầu" Binding="{Binding NgayBatDau}" IsReadOnly="True" Width="auto" />
                             <DataGridTextColumn Header="Kết thúc" Binding="{Binding NgayKetThuc}" IsReadOnly="True" Width="auto" />
                             <DataGridTextColumn Header="Trạng thái" IsReadOnly="True" Width="auto">
@@ -104,7 +155,6 @@
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
-
                         </DataGrid.Columns>
                     </DataGrid>
                 </Grid>
@@ -118,21 +168,17 @@
                     </Grid.RowDefinitions>
 
                     <StackPanel Orientation="Horizontal" Grid.Row="0">
-                        <!--Filter Title-->
                         <TextBlock Text="Tìm kiếm" FontFamily="13" FontWeight="SemiBold" Margin="0 0 10 0"
                         Foreground="#121518" HorizontalAlignment="Left" VerticalAlignment="Center" />
-
-                        <!--Filter Box-->
                         <Grid Width="200">
                             <TextBox x:Name="TxtMonHocFilterBox" 
                                      Tag="Nhập mã lớp hoặc tên GV..."
-                                 Text="{Binding TuKhoaTimKiemMonHoc, UpdateSourceTrigger=PropertyChanged}" 
+                                     Text="{Binding TuKhoaTimKiemMonHoc, UpdateSourceTrigger=PropertyChanged}" 
                                  Style="{StaticResource TextBoxFilter}" />
                         </Grid>
                     </StackPanel>
 
                     <StackPanel HorizontalAlignment="Right" Orientation="Horizontal" Grid.Row="0">
-                        <!--Refresh Button-->
                         <Button Name="BtnTaiLaiMonHoc" Click="BtnTaiLaiMonHoc_Click" Style="{StaticResource AddButton}" Margin="0 0 4 0">
                             <StackPanel Orientation="Horizontal">
                                 <Icon:PackIconMaterial Kind="Refresh" VerticalAlignment="Center" Width="11" Height="11" Margin="0 1 8 0" />
@@ -140,7 +186,6 @@
                             </StackPanel>
                         </Button>
 
-                        <!--Add Button-->
                         <Button Name="BtnThemMonHoc" Click="BtnThemMonHoc_Click" Style="{StaticResource AddButton}">
                             <StackPanel Orientation="Horizontal">
                                 <Icon:PackIconMaterial Kind="Plus" VerticalAlignment="Center" Width="11" Height="11" Margin="0 1 8 0" />
@@ -156,9 +201,11 @@
                           Style="{DynamicResource DataGridStyle1}" AutoGenerateColumns="False">
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="#" Binding="{Binding Id}" Visibility="Collapsed" IsReadOnly="True" CanUserResize="False" Width="auto" />
-                            <DataGridTextColumn Header="Tên môn" Binding="{Binding TenMon}" IsReadOnly="True" Width="auto" />
 
-                            <DataGridTemplateColumn Header="Thao tác" IsReadOnly="True" Width="*">
+                            <DataGridTextColumn Header="Tên môn" Binding="{Binding TenMon}" IsReadOnly="True" Width="*" />
+
+                            <DataGridTextColumn Header="Khoa" Binding="{Binding Khoa.TenKhoa}" IsReadOnly="True" Width="200"/>
+                            <DataGridTemplateColumn Header="Thao tác" IsReadOnly="True" Width="auto">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
@@ -176,60 +223,6 @@
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
 
-                        </DataGrid.Columns>
-                    </DataGrid>
-                </Grid>
-            </TabItem>
-
-            <TabItem x:Name="TabKhoa" Header="Khoa" Style="{StaticResource TabItemStyle}">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="*" />
-                    </Grid.RowDefinitions>
-
-                    <StackPanel HorizontalAlignment="Right" Orientation="Horizontal" Grid.Row="0">
-                        <Button Name="BtnTaiLaiKhoa" Click="BtnTaiLaiKhoa_Click" Style="{StaticResource AddButton}" Margin="0 0 4 0">
-                            <StackPanel Orientation="Horizontal">
-                                <Icon:PackIconMaterial Kind="Refresh" VerticalAlignment="Center" Width="11" Height="11" Margin="0 1 8 0" />
-                                <TextBlock Text="Tải lại" />
-                            </StackPanel>
-                        </Button>
-
-                        <Button Name="BtnThemKhoa" Click="BtnThemKhoa_Click" Style="{StaticResource AddButton}">
-                            <StackPanel Orientation="Horizontal">
-                                <Icon:PackIconMaterial Kind="Plus" VerticalAlignment="Center" Width="11" Height="11" Margin="0 1 8 0" />
-                                <TextBlock Text="Thêm" />
-                            </StackPanel>
-                        </Button>
-                    </StackPanel>
-
-                    <DataGrid ItemsSource="{Binding KhoaView}"
-                              Grid.Row="1"
-                              RowStyle="{DynamicResource DataGridRowStyle1}" 
-                              ColumnHeaderStyle="{DynamicResource DataGridColumnHeaderStyle1}" 
-                              CellStyle="{DynamicResource DataGridCellStyle1}" 
-                              Style="{DynamicResource DataGridStyle1}" 
-                              AutoGenerateColumns="False">
-                        <DataGrid.Columns>
-                            <DataGridTextColumn Header="#" Binding="{Binding Id}" Visibility="Collapsed" IsReadOnly="True" />
-                            <DataGridTextColumn Header="Mã khoa" Binding="{Binding MaKhoa}" IsReadOnly="True" Width="150" />
-                            <DataGridTextColumn Header="Tên khoa" Binding="{Binding TenKhoa}" IsReadOnly="True" Width="*" />
-
-                            <DataGridTemplateColumn Header="Thao tác" IsReadOnly="True" Width="100">
-                                <DataGridTemplateColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                                            <Button Name="BtnSuaKhoa" Click="BtnSuaKhoa_Click" Style="{StaticResource GridEditButton}" Tag="{Binding}" ToolTip="Sửa">
-                                                <Icon:PackIconMaterial Kind="PencilOffOutline" Style="{StaticResource GridButtonIcon}" />
-                                            </Button>
-                                            <Button Name="BtnXoaKhoa" Click="BtnXoaKhoa_Click" Style="{StaticResource GridRemoveButton}" Tag="{Binding}" ToolTip="Xóa" Margin="5 0 0 0">
-                                                <Icon:PackIconMaterial Kind="DeleteOffOutline" Style="{StaticResource GridButtonIcon}" />
-                                            </Button>
-                                        </StackPanel>
-                                    </DataTemplate>
-                                </DataGridTemplateColumn.CellTemplate>
-                            </DataGridTemplateColumn>
                         </DataGrid.Columns>
                     </DataGrid>
                 </Grid>
