@@ -67,46 +67,52 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
 
-                <!--Muc do-->
                 <StackPanel Grid.Column="0" Orientation="Horizontal">
+                    <TextBlock Padding="8" Text="Khoa" FontFamily="13" FontWeight="SemiBold" Margin="12 0 10 0"
+                        Foreground="#121518" HorizontalAlignment="Left" VerticalAlignment="Center" />
+                    <ComboBox Style="{StaticResource ComboBoxFlatStyle}" Width="140" Margin="10 0"
+                      ItemsSource="{Binding DsKhoa}"
+                      SelectedItem="{Binding KhoaLoc, UpdateSourceTrigger=PropertyChanged}"
+                      DisplayMemberPath="TenKhoa" />
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
                     <TextBlock Padding="8" Text="Mức độ" FontFamily="13" FontWeight="SemiBold" Margin="12 0 10 0"
                         Foreground="#121518" HorizontalAlignment="Left" VerticalAlignment="Center" />
-                    <ComboBox Style="{StaticResource ComboBoxFlatStyle}" Width="150" Margin="10 0"
+                    <ComboBox Style="{StaticResource ComboBoxFlatStyle}" Width="140" Margin="10 0"
                       SelectedValue="{Binding MucDoLoc, UpdateSourceTrigger=PropertyChanged}"
                       ItemsSource="{x:Static local2:MucDoCauHoiEnumHelper.DanhSach}"
                       DisplayMemberPath="Value"
                       SelectedValuePath="Key" />
                 </StackPanel>
 
-                <!--Loai-->
-                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <StackPanel Grid.Column="2" Orientation="Horizontal">
                     <TextBlock Text="Loại" FontFamily="13" FontWeight="SemiBold" Margin="18 0 10 0"
                     Foreground="#121518" HorizontalAlignment="Left" VerticalAlignment="Center" />
-                    <ComboBox Style="{StaticResource ComboBoxFlatStyle}" Width="150" Margin="10 0"
+                    <ComboBox Style="{StaticResource ComboBoxFlatStyle}" Width="140" Margin="10 0"
                       SelectedValue="{Binding LoaiLoc, UpdateSourceTrigger=PropertyChanged}"
                       ItemsSource="{x:Static local2:LoaiCauHoiEnumHelper.DanhSach}"
                       DisplayMemberPath="Value"
                       SelectedValuePath="Key" />
                 </StackPanel>
 
-                <!-- Môn học -->
-                <StackPanel Grid.Column="2" Orientation="Horizontal">
+                <StackPanel Grid.Column="3" Orientation="Horizontal">
                     <TextBlock Text="Môn học" FontFamily="13" FontWeight="SemiBold" Margin="18 0 10 0"
-                    Foreground="#121518" VerticalAlignment="Center" />
-                    <ComboBox Width="150" Margin="10 0"
+                     Foreground="#121518" VerticalAlignment="Center" />
+                    <ComboBox Width="140" Margin="10 0"
                   ItemsSource="{Binding DsMonHoc}"
                   SelectedItem="{Binding MonHocLoc, UpdateSourceTrigger=PropertyChanged}"
                   DisplayMemberPath="TenMon"
                   Style="{StaticResource ComboBoxFlatStyle}" />
                 </StackPanel>
 
-                <!-- Chương -->
-                <StackPanel Grid.Column="3" Orientation="Horizontal">
+                <StackPanel Grid.Column="4" Orientation="Horizontal">
                     <TextBlock Text="Chương" FontFamily="13" FontWeight="SemiBold" Margin="18 0 10 0"
-                        Foreground="#121518" VerticalAlignment="Center" />
-                    <ComboBox Width="150" Margin="10 0"
+                     Foreground="#121518" VerticalAlignment="Center" />
+                    <ComboBox Width="140" Margin="10 0"
                       ItemsSource="{Binding DsChuong}"
                       SelectedItem="{Binding ChuongLoc, UpdateSourceTrigger=PropertyChanged}"
                       DisplayMemberPath="TenChuong"

@@ -10,10 +10,8 @@ using System.ComponentModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
-using System.Windows.Media;
 
 namespace NganHangDeThi.MyUserControl;
 
@@ -24,6 +22,7 @@ public partial class RaDeControl : UserControl, INotifyPropertyChanged
     private readonly string _baseImageFolder;
     public ObservableCollection<MaTran> MaTranView { get; set; } = [];
     public ObservableCollection<LopHoc> DsLopHoc { get; set; } = [];
+    public ObservableCollection<Khoa> DsKhoa { get; set; } = [];
 
     private LopHoc? _lopHocLoc;
     public LopHoc? LopHocLoc
@@ -40,15 +39,58 @@ public partial class RaDeControl : UserControl, INotifyPropertyChanged
         }
     }
 
-    private void LoadDsLopHoc()
+    private Khoa? _khoaLoc;
+    public Khoa? KhoaLoc
+    {
+        get => _khoaLoc;
+        set
+        {
+            if (_khoaLoc != value)
+            {
+                _khoaLoc = value;
+                OnPropertyChanged(nameof(KhoaLoc));
+
+                // Khi Khoa đổi -> Tải lại danh sách lớp, KHÔNG lọc đề thi
+                UpdateDsLopHoc();
+            }
+        }
+    }
+
+    private void UpdateDsLopHoc()
     {
         DsLopHoc.Clear();
-        var listLop = _dbContext.LopHoc.OrderBy(x => x.MaLop).ToList();
+        List<LopHoc> listLop;
+
+        if (KhoaLoc == null)
+        {
+            listLop = _dbContext.LopHoc.OrderBy(x => x.MaLop).ToList();
+        }
+        else
+        {
+            listLop = _dbContext.LopHoc
+                .Where(x => x.KhoaId == KhoaLoc.Id)
+                .OrderBy(x => x.MaLop)
+                .ToList();
+        }
+
         foreach (var lop in listLop)
         {
             DsLopHoc.Add(lop);
         }
+
+        // Reset lựa chọn lớp
+        LopHocLoc = null;
     }
+
+    //private void LoadDsLopHoc()
+    //{
+    //    DsLopHoc.Clear();
+    //    var listLop = _dbContext.LopHoc.OrderBy(x => x.MaLop).ToList();
+    //    foreach (var lop in listLop)
+    //    {
+    //        DsLopHoc.Add(lop);
+    //    }
+    //}
 
     private bool _daTaiMaTran = false;
     private bool _daTaiDeThi = false;
@@ -86,7 +128,19 @@ public partial class RaDeControl : UserControl, INotifyPropertyChanged
 
         LoadDeThi();
         LoadMaTran();
-        LoadDsLopHoc();
+        //LoadDsLopHoc(); 
+
+        LoadDsKhoa();
+
+        // Load danh sách lớp (Mặc định load all)
+        UpdateDsLopHoc();
+    }
+
+    private void LoadDsKhoa()
+    {
+        DsKhoa.Clear();
+        var list = _dbContext.Khoa.OrderBy(k => k.TenKhoa).ToList();
+        foreach (var k in list) DsKhoa.Add(k);
     }
 
     private void LoadMaTran()
@@ -168,7 +222,8 @@ public partial class RaDeControl : UserControl, INotifyPropertyChanged
     private void BtnXoaBoLoc_Click(object sender, RoutedEventArgs e)
     {
         TuKhoaTimKiemDeThi = string.Empty;
-        LopHocLoc = null;
+        //LopHocLoc = null;
+        KhoaLoc = null;
     }
 
     private List<DeThi> LayDsDeThi()

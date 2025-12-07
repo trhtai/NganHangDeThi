@@ -31,7 +31,7 @@
 
         <!--Tab control-->
         <TabControl Grid.Row="1" Style="{StaticResource TabControlStyle}" SelectionChanged="TabControl_SelectionChanged">
-            <TabItem x:Name="TabDeThi" Header="Soạn đề" Style="{StaticResource TabItemStyle}">
+            <TabItem x:Name="TabDeThi" Header="Đề thi" Style="{StaticResource TabItemStyle}">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="auto" />
@@ -39,7 +39,7 @@
                         <RowDefinition Height="auto"/>
                     </Grid.RowDefinitions>
 
-                    <StackPanel Grid.Row="0" Orientation="Horizontal">
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0 0 0 10">
                         <Button Background="#cccccc" Foreground="#000000" Click="BtnXoaBoLoc_Click" Width="100" Style="{StaticResource AddButton}" Margin="0 0 20 0">
                             <StackPanel Orientation="Horizontal">
                                 <Icon:PackIconMaterial Kind="FilterRemove" VerticalAlignment="Center" Width="11" Height="11" Margin="0 1 8 0" />
@@ -47,16 +47,24 @@
                             </StackPanel>
                         </Button>
 
-                        <!--<TextBlock Text="Lớp học" FontFamily="13" FontWeight="SemiBold" Margin="0 0 10 0"
-Foreground="#121518" HorizontalAlignment="Left" VerticalAlignment="Center" />
+                        <TextBlock Text="Khoa" FontFamily="13" FontWeight="SemiBold" Margin="0 0 10 0"
+                        Foreground="#121518" HorizontalAlignment="Left" VerticalAlignment="Center" />
+
+                        <ComboBox Style="{StaticResource ComboBoxFlatStyle}" Width="180" Margin="0 0 20 0"
+                           ItemsSource="{Binding DsKhoa}"
+                           SelectedItem="{Binding KhoaLoc, UpdateSourceTrigger=PropertyChanged}"
+                           DisplayMemberPath="TenKhoa" />
+
+                        <TextBlock Text="Lớp học" FontFamily="13" FontWeight="SemiBold" Margin="0 0 10 0"
+                        Foreground="#121518" HorizontalAlignment="Left" VerticalAlignment="Center" />
 
                         <ComboBox Style="{StaticResource ComboBoxFlatStyle}" Width="150" Margin="0 0 20 0"
-                   ItemsSource="{Binding DsLopHoc}"
-                   SelectedItem="{Binding LopHocLoc, UpdateSourceTrigger=PropertyChanged}"
-                   DisplayMemberPath="MaLop" />-->
+                           ItemsSource="{Binding DsLopHoc}"
+                           SelectedItem="{Binding LopHocLoc, UpdateSourceTrigger=PropertyChanged}"
+                           DisplayMemberPath="MaLop" />
 
                         <TextBlock Text="Tìm kiếm" FontFamily="13" FontWeight="SemiBold" Margin="0 0 10 0"
-               Foreground="#121518" HorizontalAlignment="Left" VerticalAlignment="Center" />
+                       Foreground="#121518" HorizontalAlignment="Left" VerticalAlignment="Center" />
 
                         <Grid Width="200">
                             <TextBox x:Name="TxtFilterBox" 
