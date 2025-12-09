@@ -25,21 +25,6 @@ public class DapAnViewModel : INotifyPropertyChanged
 
     public event PropertyChangedEventHandler? PropertyChanged;
 }
-
-// ViewModel cho từng dòng đáp án Điền khuyết
-public class DapAnDienKhuyetViewModel : INotifyPropertyChanged
-{
-    private string _sttHienThi = "";
-    public string SttHienThi
-    {
-        get => _sttHienThi;
-        set { _sttHienThi = value; PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(SttHienThi))); }
-    }
-
-    public RichTextBox? RtbControl { get; set; }
-
-    public event PropertyChangedEventHandler? PropertyChanged;
-}
 #endregion
 
 public partial class ThemCauHoiThuCongWindow : Window, INotifyPropertyChanged
@@ -65,10 +50,7 @@ public partial class ThemCauHoiThuCongWindow : Window, INotifyPropertyChanged
         set { _isOneChoice = !value; OnPropertyChanged(nameof(IsMultiChoice)); }
     }
 
-    // Tab 3: Điền khuyết
-    public ObservableCollection<DapAnDienKhuyetViewModel> DsDapAnDK { get; set; } = [];
-
-    // Tab 4: Câu chùm
+    // Tab: Câu chùm (Đã loại bỏ Tab Điền khuyết)
     public ObservableCollection<CauHoiRaw> DsCauHoiCon { get; set; } = [];
 
     // --- CHẾ ĐỘ CON (CHILD MODE) ---
@@ -102,7 +84,11 @@ public partial class ThemCauHoiThuCongWindow : Window, INotifyPropertyChanged
         CbbChuong.Visibility = Visibility.Collapsed;
 
         // Ẩn Tab Câu chùm (Không cho tạo chùm lồng chùm để tránh phức tạp)
-        ((TabItem)TabControl.Items[3]).Visibility = Visibility.Collapsed;
+        // Vì đã xóa tab Điền khuyết, thứ tự tab thay đổi: 0: Trắc nghiệm, 1: Tự luận, 2: Câu chùm
+        if (TabControl.Items.Count > 2)
+        {
+            ((TabItem)TabControl.Items[2]).Visibility = Visibility.Collapsed;
+        }
 
         LoadInitialData();
     }
@@ -125,10 +111,6 @@ public partial class ThemCauHoiThuCongWindow : Window, INotifyPropertyChanged
         // Tab Trắc nghiệm: 4 đáp án mặc định
         DsDapAnTN.Clear();
         for (int i = 0; i < 4; i++) DsDapAnTN.Add(new DapAnViewModel());
-
-        // Tab Điền khuyết: 1 chỗ trống mặc định
-        DsDapAnDK.Clear();
-        DsDapAnDK.Add(new DapAnDienKhuyetViewModel { SttHienThi = "(1)" });
     }
 
     // ============================================================
@@ -154,10 +136,6 @@ public partial class ThemCauHoiThuCongWindow : Window, INotifyPropertyChanged
             if (rtb.Tag is DapAnViewModel vmTN)
             {
                 vmTN.RtbControl = rtb;
-            }
-            else if (rtb.Tag is DapAnDienKhuyetViewModel vmDK)
-            {
-                vmDK.RtbControl = rtb;
             }
         }
     }
@@ -206,26 +184,6 @@ public partial class ThemCauHoiThuCongWindow : Window, INotifyPropertyChanged
         }
     }
 
-    // --- Tab Điền Khuyết ---
-    private void BtnThemDapAnDK_Click(object sender, RoutedEventArgs e)
-    {
-        int nextIndex = DsDapAnDK.Count + 1;
-        DsDapAnDK.Add(new DapAnDienKhuyetViewModel { SttHienThi = $"({nextIndex})" });
-    }
-
-    private void BtnXoaDapAnDK_Click(object sender, RoutedEventArgs e)
-    {
-        if ((sender as Button)?.Tag is DapAnDienKhuyetViewModel item)
-        {
-            DsDapAnDK.Remove(item);
-            // Cập nhật lại số thứ tự
-            for (int i = 0; i < DsDapAnDK.Count; i++)
-            {
-                DsDapAnDK[i].SttHienThi = $"({i + 1})";
-            }
-        }
-    }
-
     // --- Tab Câu Chùm ---
     private void BtnThemCauCon_Click(object sender, RoutedEventArgs e)
     {
@@ -269,8 +227,7 @@ public partial class ThemCauHoiThuCongWindow : Window, INotifyPropertyChanged
         {
             case 0: LuuTabTracNghiem(); break;
             case 1: LuuTabTuLuan(); break;
-            case 2: LuuTabDienKhuyet(); break;
-            case 3: LuuTabCauChum(); break;
+            case 2: LuuTabCauChum(); break; // Index đã thay đổi vì xóa tab Điền khuyết
         }
     }
 
@@ -328,35 +285,6 @@ public partial class ThemCauHoiThuCongWindow : Window, INotifyPropertyChanged
             MucDo = (MucDoCauHoi)CbbMucDo.SelectedValue,
             Loai = LoaiCauHoi.TuLuan,
             DapAn = listDapAn
-        });
-    }
-
-    private void LuuTabDienKhuyet()
-    {
-        string noiDungCH = RichTextHelper.GetHtmlFromRichTextBox(RtbCauHoiDK);
-        if (string.IsNullOrWhiteSpace(noiDungCH)) { Msg("Nội dung đoạn văn điền khuyết không được để trống."); return; }
-
-        var listDapAnClean = new List<CauTraLoiRaw>();
-        int stt = 1;
-        foreach (var vm in DsDapAnDK)
-        {
-            if (vm.RtbControl == null) continue;
-            string noiDungDA = RichTextHelper.GetHtmlFromRichTextBox(vm.RtbControl);
-            if (!string.IsNullOrWhiteSpace(noiDungDA))
-            {
-                // Điền khuyết: Đáp án nhập vào là đáp án đúng
-                listDapAnClean.Add(new CauTraLoiRaw(noiDungDA, true, (byte)stt++, false, null));
-            }
-        }
-
-        if (listDapAnClean.Count == 0) { Msg("Cần ít nhất 1 từ để điền."); return; }
-
-        ProcessSave(new CauHoiRaw
-        {
-            NoiDung = noiDungCH,
-            MucDo = (MucDoCauHoi)CbbMucDo.SelectedValue,
-            Loai = LoaiCauHoi.DienKhuyet,
-            DapAn = listDapAnClean
         });
     }
 
@@ -460,14 +388,10 @@ public partial class ThemCauHoiThuCongWindow : Window, INotifyPropertyChanged
         RtbCauHoiTN.Document.Blocks.Clear();
         RtbCauHoiTL.Document.Blocks.Clear();
         RtbDapAnTL.Document.Blocks.Clear();
-        RtbCauHoiDK.Document.Blocks.Clear();
         RtbCauHoiChum.Document.Blocks.Clear();
 
         DsDapAnTN.Clear();
         for (int i = 0; i < 4; i++) DsDapAnTN.Add(new DapAnViewModel());
-
-        DsDapAnDK.Clear();
-        DsDapAnDK.Add(new DapAnDienKhuyetViewModel { SttHienThi = "(1)" });
 
         DsCauHoiCon.Clear();
     }

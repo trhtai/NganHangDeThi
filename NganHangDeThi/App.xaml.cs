@@ -48,9 +48,9 @@ public partial class App : Application
 
                 service.AddTransient<ThemCauHoiThuCongWindow>();
 
-                service.AddScoped<RaDeControl>();
-                service.AddScoped<NganHangCauHoiControl>();
-                service.AddScoped<QuanTriHeThongControl>();
+                service.AddTransient<RaDeControl>();
+                service.AddTransient<NganHangCauHoiControl>();
+                service.AddTransient<QuanTriHeThongControl>();
 
                 service.AddScoped<IUnitOfWork, UnitOfWork>();
                 service.AddScoped<MainWindow>();

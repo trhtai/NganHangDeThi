@@ -240,7 +240,7 @@
                         </GroupBox>
                     </Grid>
                 </TabItem>
-                <TabItem Header="Điền khuyết" Style="{StaticResource TabItemStyle}">
+                <!--<TabItem Header="Điền khuyết" Style="{StaticResource TabItemStyle}">
                     <Grid Margin="0 10 0 0">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
@@ -317,7 +317,7 @@
                             </Grid>
                         </GroupBox>
                     </Grid>
-                </TabItem>
+                </TabItem>-->
 
                 <TabItem Header="Câu chùm" Style="{StaticResource TabItemStyle}">
                     <Grid Margin="0 10 0 0">

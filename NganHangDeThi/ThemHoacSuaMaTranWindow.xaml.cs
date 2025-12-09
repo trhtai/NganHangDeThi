@@ -1,4 +1,5 @@
-﻿using NganHangDeThi.Common.Enum;
+﻿using Microsoft.EntityFrameworkCore;
+using NganHangDeThi.Common.Enum;
 using NganHangDeThi.Data.DataContext;
 using NganHangDeThi.Data.Entity;
 using NganHangDeThi.Helpers;
@@ -121,10 +122,29 @@ public partial class ThemHoacSuaMaTranWindow : Window, INotifyPropertyChanged
 
         if (isCluster)
         {
-            int tongSoCauCon = query.SelectMany(q => q.DsCauHoiCon).Count();
-            TxtThongTinBoLoc.Text = $"Tìm thấy: {tongSoBanGhi} bài (chứa tổng {tongSoCauCon} câu hỏi nhỏ).";
+            // 1. Lấy danh sách các câu chùm thỏa mãn điều kiện lọc
+            // Cần Include DsCauHoiCon để đếm số lượng con
+            var dsBaiChum = query.Include(q => q.DsCauHoiCon).ToList();
+
+            // 2. Tính tổng số câu con (Logic cũ)
+            int tongSoCauCon = dsBaiChum.Sum(q => q.DsCauHoiCon.Count);
+
+            // 3. LOGIC MỚI: Thống kê chi tiết
+            // Nhóm các bài chùm theo "số lượng câu hỏi con" của nó
+            var thongKeChiTiet = dsBaiChum
+                .GroupBy(q => q.DsCauHoiCon.Count)      // Nhóm theo số lượng câu con (VD: Nhóm 4 câu, Nhóm 3 câu)
+                .OrderBy(g => g.Key)                    // Sắp xếp tăng dần
+                .Select(g => $"{g.Count()} bài có {g.Key} câu") // Tạo chuỗi hiển thị: "1 bài có 4 câu"
+                .ToList();
+
+            string strChiTiet = string.Join(", ", thongKeChiTiet);
+
+            // 4. Hiển thị ra giao diện
+            TxtThongTinBoLoc.Text = $"Tìm thấy: {tongSoBanGhi} bài (Tổng {tongSoCauCon} câu hỏi con).\nCấu trúc: {strChiTiet}.";
             TxtThongTinBoLoc.Foreground = System.Windows.Media.Brushes.Blue;
-            TxtThongTinBoLoc.ToolTip = "Hãy nhập tổng số câu hỏi nhỏ (Items) vào ô 'Số câu'.";
+
+            // Gợi ý tool tip thông minh hơn
+            TxtThongTinBoLoc.ToolTip = $"Gợi ý: Bạn nên nhập số câu là bội số của ({string.Join(" hoặc ", dsBaiChum.Select(x => x.DsCauHoiCon.Count).Distinct())}) để lấy trọn vẹn bài đọc.";
         }
         else
         {

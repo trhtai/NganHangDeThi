@@ -23,9 +23,29 @@ public partial class NganHangCauHoiControl : UserControl, INotifyPropertyChanged
     private readonly QuestionExtractorService _questionExtractorService;
 
     private ObservableCollection<CauHoi> _dsCauHoi = [];
-    public ObservableCollection<Khoa> DsKhoa { get; set; } = [];
-    public ObservableCollection<MonHoc> DsMonHoc { get; set; } = [];
     public ObservableCollection<Chuong> DsChuong { get; set; } = [];
+
+    private ObservableCollection<Khoa> _dsKhoa = [];
+    public ObservableCollection<Khoa> DsKhoa
+    {
+        get => _dsKhoa;
+        set
+        {
+            _dsKhoa = value;
+            OnPropertyChanged(nameof(DsKhoa));
+        }
+    }
+
+    private ObservableCollection<MonHoc> _dsMonHoc = [];
+    public ObservableCollection<MonHoc> DsMonHoc
+    {
+        get => _dsMonHoc;
+        set
+        {
+            _dsMonHoc = value;
+            OnPropertyChanged(nameof(DsMonHoc));
+        }
+    }
 
     public int TongTatCa => _dsCauHoi.Count;
     public int TongDangHienThi => CauHoiView?.Cast<object>().Count() ?? 0;
@@ -71,12 +91,10 @@ public partial class NganHangCauHoiControl : UserControl, INotifyPropertyChanged
         List<MonHoc> dsMon;
         if (KhoaLoc == null)
         {
-            // Nếu không chọn Khoa -> Load tất cả môn
             dsMon = _dbContext.MonHoc.OrderBy(m => m.TenMon).ToList();
         }
         else
         {
-            // Nếu chọn Khoa -> Load môn thuộc Khoa đó
             dsMon = _dbContext.MonHoc
                 .Where(m => m.KhoaId == KhoaLoc.Id)
                 .OrderBy(m => m.TenMon)
@@ -84,9 +102,9 @@ public partial class NganHangCauHoiControl : UserControl, INotifyPropertyChanged
         }
 
         DsMonHoc = new ObservableCollection<MonHoc>(dsMon);
-        OnPropertyChanged(nameof(DsMonHoc));
 
-        // Reset lựa chọn môn học hiện tại về null để người dùng chọn lại
+        // QUAN TRỌNG: Khi danh sách môn thay đổi, Reset môn đang chọn về null 
+        // để tránh môn cũ (không thuộc khoa mới) vẫn hiển thị
         MonHocLoc = null;
     }
 
@@ -354,9 +372,9 @@ public partial class NganHangCauHoiControl : UserControl, INotifyPropertyChanged
         _cauHoiView = CollectionViewSource.GetDefaultView(_dsCauHoi);
         _cauHoiView.Filter = FilterCauHoi;
 
-        // [THÊM] Tải danh sách Khoa
-        DsKhoa = new ObservableCollection<Khoa>(_dbContext.Khoa.OrderBy(k => k.TenKhoa));
-        OnPropertyChanged(nameof(DsKhoa));
+        // Load danh sách Khoa
+        var listKhoa = _dbContext.Khoa.OrderBy(k => k.TenKhoa).ToList();
+        DsKhoa = new ObservableCollection<Khoa>(listKhoa);
 
         // Tải danh sách môn học (Mặc định tải hết vì chưa chọn Khoa)
         CapNhatDsMonHocTheoKhoa();
