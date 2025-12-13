@@ -1,6 +1,7 @@
 ﻿using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
+using NganHangDeThi.Common.Enum;
 using NganHangDeThi.Data.Entity;
 using NganHangDeThi.Helpers;
 using NganHangDeThi.Models;
@@ -70,7 +71,20 @@ public static class ExportDeThiToWordService
         int stt = 1;
 
         // Gom nhóm theo ParentId
-        var groups = dataList.GroupBy(x => x.CauHoi.ParentId ?? x.CauHoi.Id).ToList();
+        //var groups = dataList.GroupBy(x => x.CauHoi.ParentId ?? x.CauHoi.Id).ToList();
+        // --- SỬA ĐỔI 1: SẮP XẾP ---
+        // Gom nhóm theo ParentId VÀ Sắp xếp để Tự luận xuống cuối
+        var groups = dataList.GroupBy(x => x.CauHoi.ParentId ?? x.CauHoi.Id)
+            .OrderBy(group => {
+                // Lấy loại câu hỏi của phần tử đầu tiên trong nhóm
+                var loai = group.First().CauHoi.Loai;
+                // Kiểm tra xem có phải Tự luận (2) hoặc Chùm tự luận (7) không
+                bool laTuLuan = loai == LoaiCauHoi.TuLuan || loai == LoaiCauHoi.ChumTuLuan;
+                // Nếu là Tự luận trả về 1 (lớn hơn), ngược lại 0 (nhỏ hơn) -> Tự luận sẽ nằm sau
+                return laTuLuan ? 1 : 0;
+            })
+            .ToList();
+        // ---------------------------
 
         foreach (var group in groups)
         {
@@ -130,26 +144,32 @@ public static class ExportDeThiToWordService
                 insertAfter = body.InsertAfter(pCauHoi, insertAfter);
 
                 // In Đáp án
-                char ma = 'A';
-                foreach (var d in dapAns.OrderBy(x => x.ViTriGoc))
+                // --- SỬA ĐỔI 2: KHÔNG IN ĐÁP ÁN NẾU LÀ TỰ LUẬN ---
+                bool laTuLuan = cauHoi.Loai == LoaiCauHoi.TuLuan || cauHoi.Loai == LoaiCauHoi.ChumTuLuan;
+
+                if (!laTuLuan)
                 {
-                    var pDapAn = new Paragraph();
-
-                    pDapAn.Append(new Run(
-                        new RunProperties(new RunFonts { Ascii = "Times New Roman" }, new FontSize { Val = "24" },
-                        new Bold { Val = false }, new BoldComplexScript { Val = false }),
-                        new Text($"{ma++}. ")
-                    ));
-
-                    pDapAn.Append(HtmlToWordHelper.ConvertHtmlToElements(mainPart, d.NoiDung, imageBasePath, true));
-
-                    if (!string.IsNullOrWhiteSpace(d.HinhAnh))
+                    char ma = 'A';
+                    foreach (var d in dapAns.OrderBy(x => x.ViTriGoc))
                     {
-                        var drawing = HtmlToWordHelper.CreateImageDrawing(mainPart, Path.Combine(imageBasePath, d.HinhAnh));
-                        if (drawing != null) pDapAn.Append(new Run(drawing));
-                    }
+                        var pDapAn = new Paragraph();
 
-                    insertAfter = body.InsertAfter(pDapAn, insertAfter);
+                        pDapAn.Append(new Run(
+                            new RunProperties(new RunFonts { Ascii = "Times New Roman" }, new FontSize { Val = "24" },
+                            new Bold { Val = false }, new BoldComplexScript { Val = false }),
+                            new Text($"{ma++}. ")
+                        ));
+
+                        pDapAn.Append(HtmlToWordHelper.ConvertHtmlToElements(mainPart, d.NoiDung, imageBasePath, true));
+
+                        if (!string.IsNullOrWhiteSpace(d.HinhAnh))
+                        {
+                            var drawing = HtmlToWordHelper.CreateImageDrawing(mainPart, Path.Combine(imageBasePath, d.HinhAnh));
+                            if (drawing != null) pDapAn.Append(new Run(drawing));
+                        }
+
+                        insertAfter = body.InsertAfter(pDapAn, insertAfter);
+                    }
                 }
             }
 

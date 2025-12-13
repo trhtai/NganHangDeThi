@@ -73,7 +73,7 @@ public static class ExportDapAnService
     {
         // --- 1. Header Mã đề ---
         var pMaDe = new Paragraph(new Run(
-            new RunProperties(new Bold(), new FontSize { Val = "32" }, new Color { Val = "000000" }), // Cỡ chữ 16
+            new RunProperties(new Bold(), new FontSize { Val = "32" }, new Color { Val = "000000" }),
             new Text($"MÃ ĐỀ: {deThi.MaDe} - {deThi.TieuDe}")
         ));
         pMaDe.ParagraphProperties = new ParagraphProperties(new Justification { Val = JustificationValues.Center });
@@ -81,10 +81,21 @@ public static class ExportDapAnService
 
         body.Append(new Paragraph()); // Dòng trống
 
-        // --- 2. Phân loại câu hỏi ---
-        var allQuestions = deThi.DsChiTietDeThi.OrderBy(ct => ct.Id).ToList();
-        var trAcNghiem = allQuestions.Where(q => q.CauHoi.Loai != LoaiCauHoi.TuLuan && q.CauHoi.Loai != LoaiCauHoi.ChumTuLuan).ToList();
-        var tuLuan = allQuestions.Where(q => q.CauHoi.Loai == LoaiCauHoi.TuLuan || q.CauHoi.Loai == LoaiCauHoi.ChumTuLuan).ToList();
+        // --- 2. SẮP XẾP LẠI DANH SÁCH CÂU HỎI (Đồng bộ logic với ExportDeThiToWordService) ---
+        // Logic: Gom nhóm theo Parent -> Đưa nhóm Tự luận xuống cuối -> Bung ra thành danh sách phẳng để lấy số thứ tự (STT) chuẩn
+        var sortedQuestions = deThi.DsChiTietDeThi
+            .GroupBy(x => x.CauHoi.ParentId ?? x.CauHoi.Id) // Gom nhóm câu chùm
+            .OrderBy(group => {
+                var loai = group.First().CauHoi.Loai;
+                bool laTuLuan = loai == LoaiCauHoi.TuLuan || loai == LoaiCauHoi.ChumTuLuan;
+                return laTuLuan ? 1 : 0; // 0: Trắc nghiệm (Lên trên), 1: Tự luận (Xuống dưới)
+            })
+            .SelectMany(g => g) // Bung nhóm ra thành danh sách phẳng (Flat list) theo đúng thứ tự in
+            .ToList();
+
+        // Lọc danh sách con để hiển thị
+        var trAcNghiem = sortedQuestions.Where(q => q.CauHoi.Loai != LoaiCauHoi.TuLuan && q.CauHoi.Loai != LoaiCauHoi.ChumTuLuan).ToList();
+        var tuLuan = sortedQuestions.Where(q => q.CauHoi.Loai == LoaiCauHoi.TuLuan || q.CauHoi.Loai == LoaiCauHoi.ChumTuLuan).ToList();
 
         // --- 3. BẢNG TRẮC NGHIỆM (Matrix Style) ---
         if (trAcNghiem.Count > 0)
@@ -122,7 +133,8 @@ public static class ExportDapAnService
                     if (index < trAcNghiem.Count)
                     {
                         var q = trAcNghiem[index];
-                        int sttThucTe = allQuestions.IndexOf(q) + 1;
+                        // QUAN TRỌNG: Lấy STT dựa trên danh sách đã sắp xếp (sortedQuestions)
+                        int sttThucTe = sortedQuestions.IndexOf(q) + 1;
 
                         // Tìm đáp án đúng
                         var dapAnDung = q.DsDapAnTrongDe.FirstOrDefault(d => d.LaDapAnDung);
@@ -153,7 +165,8 @@ public static class ExportDapAnService
 
             foreach (var chiTiet in tuLuan)
             {
-                int stt = allQuestions.IndexOf(chiTiet) + 1;
+                // QUAN TRỌNG: Lấy STT dựa trên danh sách đã sắp xếp
+                int stt = sortedQuestions.IndexOf(chiTiet) + 1;
                 var cauHoi = chiTiet.CauHoi;
 
                 // Câu hỏi
