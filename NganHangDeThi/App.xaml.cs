@@ -1,0 +1,116 @@
+﻿using HandyControl.Tools;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using NganHangDeThi.Data;
+using NganHangDeThi.Data.Repositories;
+using NganHangDeThi.Data.Repositories.Interfaces;
+using NganHangDeThi.Helpers;
+using NganHangDeThi.Services;
+using NganHangDeThi.Services.Interfaces;
+using NganHangDeThi.ViewModels.Settings;
+using NganHangDeThi.ViewModels.Subjects;
+using NganHangDeThi.ViewModels.Subjects.Factories;
+using NganHangDeThi.ViewModels.Subjects.Factories.Interfaces;
+using NganHangDeThi.Views;
+using NganHangDeThi.Views.MonHoc;
+using NganHangDeThi.Views.Settings;
+using NganHangDeThi.Views.StudentClasses;
+using NganHangDeThi.Views.Teachers;
+using System.Windows;
+
+namespace NganHangDeThi;
+
+public partial class App : Application
+{
+    public static IHost? AppHost { get; private set; }
+
+    public App()
+    {
+        AppHost = Host.CreateDefaultBuilder()
+            .ConfigureServices((context, services) =>
+            {
+                // SQLite / EF Core.
+                services.AddDbContextFactory<AppDbContext>(options =>
+                {
+                    options.UseSqlite(DbPathProvider.ConnectionString);
+                });
+
+                // Repositories.
+                services.AddSingleton<ICaiDatRepository, CaiDatRepository>();
+                services.AddSingleton<IMonHocRepository, MonHocRepository>();
+                services.AddSingleton<IKhoaRepository, KhoaRepository>();
+
+                // Services.
+                services.AddSingleton<IDateTimeService, DateTimeService>();
+                services.AddSingleton<IConfirmService, HandyConfirmService>();
+                services.AddSingleton<IToastService, HandyToastService>();
+
+                // Views, ViewModels and Factories.
+                services.AddTransient<StudentClassView>();
+
+                services.AddTransient<ISubjectEditViewModelFactory, SubjectEditViewModelFactory>();
+                services.AddTransient<SubjectViewModel>();
+                services.AddTransient<MonHocView>();
+
+                services.AddTransient<TeacherView>();
+
+                services.AddTransient<SettingViewModel>();
+                services.AddTransient<SettingView>();
+
+                services.AddSingleton<MainView>();
+            })
+            .Build();
+    }
+
+    protected override async void OnStartup(StartupEventArgs e)
+    {
+        await AppHost!.StartAsync();
+
+        // Áp dụng Migration (pending) trước khi hiển thị MainWindow.
+        await using (var dbContext = await AppHost.Services
+                         .GetRequiredService<IDbContextFactory<AppDbContext>>()
+                         .CreateDbContextAsync())
+        {
+            await dbContext.Database.MigrateAsync();
+        }
+
+        // Load DinhDangNgayGio.
+        var caiDatRepo = AppHost!.Services.GetRequiredService<ICaiDatRepository>();
+
+        if (caiDatRepo != null)
+        {
+            try
+            {
+                // Kéo dữ liệu từ DB (truyền CancellationToken.None vì app mới khởi động)
+                string formatStr = await caiDatRepo.GetDinhDangNgayGioAsync(CancellationToken.None);
+
+                // Gán vào biến toàn cục cho Converter dùng
+                if (!string.IsNullOrWhiteSpace(formatStr))
+                {
+                    AppGlobalState.CurrentDateFormat = formatStr;
+                }
+            }
+            catch (Exception)
+            {
+                // Bỏ qua hoặc ghi Log nếu lỗi kết nối DB. 
+                // AppGlobalState vẫn sẽ giữ giá trị mặc định là "dd/MM/yyyy HH:mm"
+            }
+        }
+
+        // Đặt ngôn ngữ mặc định của HandyControl sang tiếng Anh
+        ConfigHelper.Instance.SetLang("en");
+
+        // Hiển thị MainView.
+        AppHost.Services.GetRequiredService<MainView>().Show();
+
+        base.OnStartup(e);
+    }
+
+    protected override async void OnExit(ExitEventArgs e)
+    {
+        await AppHost!.StopAsync();
+
+        base.OnExit(e);
+    }
+}

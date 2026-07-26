@@ -1,0 +1,15 @@
+﻿<UserControl x:Class="NganHangDeThi.Views.Components.LoadingOverlay"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:NganHangDeThi.Views.Components"
+             mc:Ignorable="d"
+             
+             xmlns:hc="https://handyorg.github.io/handycontrol">
+    
+    <!--LOADING OVERLAY: mờ nền + chặn thao tác trong lúc tải trang dữ liệu-->
+    <Grid Background="Transparent">
+        <hc:LoadingCircle />
+    </Grid>
+</UserControl>

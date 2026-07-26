@@ -1,0 +1,189 @@
+﻿<Window x:Class="NganHangDeThi.Views.MainView"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:NganHangDeThi.Views"
+        mc:Ignorable="d"
+        
+        xmlns:hc="https://handyorg.github.io/handycontrol"
+        xmlns:Icon="http://metro.mahapps.com/winfx/xaml/iconpacks"
+        Title="MainView" 
+        Height="600" Width="1200"
+        WindowStyle="None"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource RegionBrush}" 
+        StateChanged="MainView_StateChanged"
+        Closing="Window_Closing" 
+        PreviewKeyDown="Window_PreviewKeyDown">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!--Row-0: TitleBar-->
+        <Border Grid.Row="0" x:Name="TitleBarBorder" Padding="0 4 0 4"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="0 0 0 1"
+                Background="Transparent"
+                MouseLeftButtonDown="TitleBarBorder_MouseLeftButtonDown">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                
+                <!--Row-0 Col-0: Sidebar Toggle Button-->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Left" Margin="10 0 0 0">
+                    <ToggleButton x:Name="SidebarToggleButton"
+                                  IsChecked="{Binding IsOpen, ElementName=Sidebar}"
+                                  Style="{StaticResource ToggleButtonCustom}"
+                                  hc:StatusSwitchElement.HideUncheckedElement="True"
+                                  Width="30" Height="30"
+                                  Cursor="Hand">
+                        <hc:StatusSwitchElement.CheckedElement>
+                            <Icon:PackIconMaterial Kind="Close" />
+                        </hc:StatusSwitchElement.CheckedElement>
+                        
+                        <Icon:PackIconMaterial Kind="Menu" />
+                    </ToggleButton>
+                </StackPanel>
+                
+                <!--Row-0 Col-1: Breadcrumb (can click)-->
+                <StackPanel Grid.Column="1" x:Name="BreadcrumbPanel"
+                            Orientation="Horizontal"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Center"
+                            Margin="10 0 0 0"/>
+
+                <!--Row-0 Col-2: Window Control Buttons-->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0 0 10 0">
+                    <Button x:Name="WindowMinimizeButton"
+                            Style="{StaticResource ButtonCustom}"
+                            Width="30" Height="30"
+                            hc:BackgroundSwitchElement.MouseHoverBackground="{DynamicResource SecondaryRegionBrush}"
+                            hc:BorderElement.CornerRadius="4"
+                            Cursor="Hand"
+                            Background="Transparent"
+                            Click="WindowMinimizeButton_Click">
+                        <Icon:PackIconMaterial Kind="WindowMinimize" Width="12" Height="12" />
+                    </Button>
+                    <Button x:Name="WindowMaximizeButton"
+                            Style="{StaticResource ButtonCustom}"
+                            Width="30" Height="30"
+                            hc:BackgroundSwitchElement.MouseHoverBackground="{DynamicResource SecondaryRegionBrush}"
+                            hc:BorderElement.CornerRadius="4"
+                            Cursor="Hand"
+                            Background="Transparent"
+                            Click="WindowMaximizeButton_Click">
+                        <Icon:PackIconMaterial x:Name="WindowMaximizeIcon" Kind="WindowMaximize" Width="12" Height="12" />
+                    </Button>
+                    <Button x:Name="WindowCloseButton"
+                            Style="{StaticResource ButtonCustom}"
+                            Width="30" Height="30"
+                            hc:BackgroundSwitchElement.MouseHoverBackground="{DynamicResource SecondaryRegionBrush}"
+                            hc:BorderElement.CornerRadius="4"
+                            Cursor="Hand"
+                            Background="Transparent"
+                            Click="WindowCloseButton_Click">
+                        <Icon:PackIconMaterial Kind="WindowClose" Width="12" Height="12" />
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!--Row-1: Content-->
+        <hc:SimplePanel Grid.Row="1">
+            <!--Page content-->
+            <hc:TransitioningContentControl x:Name="PageContent" Margin="10" />
+
+            <!--Side Menu-->
+            <hc:Drawer x:Name="Sidebar" Dock="Left" ShowMode="Push" MaskCanClose="True">
+                <Border Background="{DynamicResource RegionBrush}" Width="300" 
+                        BorderThickness="0 1 0 0" BorderBrush="{DynamicResource BorderBrush}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+
+                        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="24,30,24,20" VerticalAlignment="Center">
+                            <!-- Icon Logo nền màu Primary -->
+                            <Border Width="42" Height="42" CornerRadius="8" 
+                                    Background="{DynamicResource PrimaryBrush}" Margin="0,0,16,0"
+                                    Effect="{DynamicResource EffectShadow2}">
+                                <Icon:PackIconMaterial Kind="School" Foreground="White" Width="24" Height="24" 
+                                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+
+                            <!-- Tên phần mềm -->
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="NGÂN HÀNG" FontWeight="Bold" FontSize="16" 
+                                           Foreground="{DynamicResource PrimaryTextBrush}" />
+                                <TextBlock Text="ĐỀ THI 2026" FontSize="13" 
+                                           Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,2,0,0"/>
+                            </StackPanel>
+                        </StackPanel>
+
+                        <Border Grid.Row="0" VerticalAlignment="Bottom" Height="1" 
+                                Background="{DynamicResource BorderBrush}" Margin="24,0,24,0"/>
+
+                        <hc:SideMenu x:Name="MainSideMenu" Grid.Row="1"
+                                 BorderThickness="0"
+                                 Margin="12"
+                                 PreviewMouseLeftButtonUp="MainSideMenu_PreviewMouseLeftButtonUp"
+                                 SelectionChanged="MainSideMenu_SelectionChanged">
+                            <!-- 1. Ngân hàng câu hỏi -->
+                            <hc:SideMenuItem Header="Ngân hàng câu hỏi" Tag="QuestionBankMenu">
+                                <hc:SideMenuItem.Icon>
+                                    <Icon:PackIconMaterial Kind="DatabasePlus" Width="16" Height="16"/>
+                                </hc:SideMenuItem.Icon>
+                            </hc:SideMenuItem>
+
+                            <!-- 2. Quản lý đề thi -->
+                            <hc:SideMenuItem Header="Quản lý đề thi" Tag="ExamManagementMenu">
+                                <hc:SideMenuItem.Icon>
+                                    <Icon:PackIconMaterial Kind="FileDocumentEdit" Width="16" Height="16"/>
+                                </hc:SideMenuItem.Icon>
+                            </hc:SideMenuItem>
+
+                            <!-- 3. Quản lý danh mục (Menu xổ xuống có các mục con) -->
+                            <hc:SideMenuItem Header="Quản lý danh mục" Tag="CategoryMenu">
+                                <hc:SideMenuItem.Icon>
+                                    <Icon:PackIconMaterial Kind="ViewList" Width="16" Height="16"/>
+                                </hc:SideMenuItem.Icon>
+
+                                <hc:SideMenuItem Header="Lớp học" Tag="StudentClassView">
+                                    <hc:SideMenuItem.Icon>
+                                        <Icon:PackIconMaterial Kind="AccountGroup" Width="14" Height="14"/>
+                                    </hc:SideMenuItem.Icon>
+                                </hc:SideMenuItem>
+
+                                <hc:SideMenuItem Header="Môn học" Tag="SubjectView">
+                                    <hc:SideMenuItem.Icon>
+                                        <Icon:PackIconMaterial Kind="BookOpenVariant" Width="14" Height="14"/>
+                                    </hc:SideMenuItem.Icon>
+                                </hc:SideMenuItem>
+
+                                <hc:SideMenuItem Header="Giáo viên" Tag="TeacherView">
+                                    <hc:SideMenuItem.Icon>
+                                        <Icon:PackIconMaterial Kind="AccountTie" Width="14" Height="14"/>
+                                    </hc:SideMenuItem.Icon>
+                                </hc:SideMenuItem>
+                            </hc:SideMenuItem>
+
+                            <!-- 4. Cài đặt hệ thống -->
+                            <hc:SideMenuItem Header="Thiết lập chung" Tag="SettingView">
+                                <hc:SideMenuItem.Icon>
+                                    <Icon:PackIconMaterial Kind="Cog" Width="16" Height="16"/>
+                                </hc:SideMenuItem.Icon>
+                            </hc:SideMenuItem>
+                        </hc:SideMenu>
+                    </Grid>
+                </Border>
+            </hc:Drawer>
+        </hc:SimplePanel>
+    </Grid>
+</Window>
