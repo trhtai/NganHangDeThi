@@ -30,11 +30,5 @@ public class LopConfiguration : IEntityTypeConfiguration<Lop>
             .WithMany(e => e.DanhSachLop)
             .HasForeignKey(e => e.KhoaId)
             .OnDelete(DeleteBehavior.Restrict);
-
-        // NienKhoa: 1-n.
-        builder.HasOne(e => e.NienKhoa)
-            .WithMany(e => e.DanhSachLop)
-            .HasForeignKey(e => e.NienKhoaId)
-            .OnDelete(DeleteBehavior.Restrict);
     }
 }

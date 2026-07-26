@@ -1,6 +1,8 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Messaging;
 using NganHangDeThi.Data.Repositories.Interfaces;
 using NganHangDeThi.Helpers;
+using NganHangDeThi.Messages;
 using System.Collections.ObjectModel;
 
 namespace NganHangDeThi.ViewModels.Settings;
@@ -138,6 +140,7 @@ public partial class SettingViewModel : ObservableObject
         if (IsLoading || value == null) return;
 
         AppGlobalState.CurrentDateFormat = value;
+        WeakReferenceMessenger.Default.Send(new DateFormatChangedMessage());
         SaveDateFormatAsync(value);
     }
 

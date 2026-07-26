@@ -6,9 +6,11 @@
              xmlns:local="clr-namespace:NganHangDeThi.Views.Settings"
              mc:Ignorable="d"
              
+             Width="800"
              xmlns:hc="https://handyorg.github.io/handycontrol"
              xmlns:conv="clr-namespace:NganHangDeThi.Converters"
-             xmlns:comp="clr-namespace:NganHangDeThi.Views.Components">
+             xmlns:comp="clr-namespace:NganHangDeThi.Views.Components"
+             Background="{DynamicResource RegionBrush}">
 
     <UserControl.Resources>
         <conv:MyBoolToVisibilityConverter x:Key="MyBoolToVisibilityConverter"/>
@@ -62,6 +64,13 @@
                             Style="{StaticResource ComboBoxExtend}"/>
                 </Grid>
             </Border>
+
+            <Button x:Name="CloseButton"
+                    Content="Đóng" Width="90" Margin="0 10 0 0"
+                    HorizontalAlignment="Right"
+                    Style="{StaticResource ButtonDefault}"
+                    IsCancel="True"
+                    Click="CloseButton_Click"/>
         </StackPanel>
         <comp:LoadingOverlay Visibility="{Binding IsLoading, Converter={StaticResource MyBoolToVisibilityConverter}}" />
     </Grid>

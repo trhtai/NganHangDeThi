@@ -1,7 +1,7 @@
 ﻿using NganHangDeThi.ViewModels.Subjects;
 using System.Windows;
 
-namespace NganHangDeThi.Views.MonHoc;
+namespace NganHangDeThi.Views.MonHocPage;
 
 public partial class ChinhSuaMonHocDialogView : Window
 {

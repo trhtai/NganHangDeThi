@@ -60,6 +60,16 @@
 
                 <!--Row-0 Col-2: Window Control Buttons-->
                 <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0 0 10 0">
+                    <Button x:Name="SettingButton"
+                            Style="{StaticResource ButtonCustom}"
+                            Width="30" Height="30"
+                            hc:BackgroundSwitchElement.MouseHoverBackground="{DynamicResource SecondaryRegionBrush}"
+                            hc:BorderElement.CornerRadius="4"
+                            Cursor="Hand"
+                            Background="Transparent"
+                            Click="SettingButton_Click">
+                        <Icon:PackIconMaterial Kind="Cog" Width="12" Height="12" />
+                    </Button>
                     <Button x:Name="WindowMinimizeButton"
                             Style="{StaticResource ButtonCustom}"
                             Width="30" Height="30"
@@ -100,7 +110,7 @@
             <hc:TransitioningContentControl x:Name="PageContent" Margin="10" />
 
             <!--Side Menu-->
-            <hc:Drawer x:Name="Sidebar" Dock="Left" ShowMode="Push" MaskCanClose="True">
+            <hc:Drawer x:Name="Sidebar" Dock="Left" ShowMode="Push" MaskCanClose="True" Opened="Sidebar_Opened">
                 <Border Background="{DynamicResource RegionBrush}" Width="300" 
                         BorderThickness="0 1 0 0" BorderBrush="{DynamicResource BorderBrush}">
                     <Grid>
@@ -135,27 +145,34 @@
                                  Margin="12"
                                  PreviewMouseLeftButtonUp="MainSideMenu_PreviewMouseLeftButtonUp"
                                  SelectionChanged="MainSideMenu_SelectionChanged">
+                            
                             <!-- 1. Ngân hàng câu hỏi -->
-                            <hc:SideMenuItem Header="Ngân hàng câu hỏi" Tag="QuestionBankMenu">
+                            <hc:SideMenuItem x:Name="QuestionBankMenuItem" Header="Ngân hàng câu hỏi" Tag="QuestionBankMenu">
                                 <hc:SideMenuItem.Icon>
                                     <Icon:PackIconMaterial Kind="DatabasePlus" Width="16" Height="16"/>
                                 </hc:SideMenuItem.Icon>
                             </hc:SideMenuItem>
 
                             <!-- 2. Quản lý đề thi -->
-                            <hc:SideMenuItem Header="Quản lý đề thi" Tag="ExamManagementMenu">
+                            <hc:SideMenuItem Header="Quản lý đề thi">
                                 <hc:SideMenuItem.Icon>
                                     <Icon:PackIconMaterial Kind="FileDocumentEdit" Width="16" Height="16"/>
                                 </hc:SideMenuItem.Icon>
                             </hc:SideMenuItem>
 
-                            <!-- 3. Quản lý danh mục (Menu xổ xuống có các mục con) -->
-                            <hc:SideMenuItem Header="Quản lý danh mục" Tag="CategoryMenu">
+                            <!-- 3. Quản lý danh mục -->
+                            <hc:SideMenuItem Header="Quản lý danh mục">
                                 <hc:SideMenuItem.Icon>
                                     <Icon:PackIconMaterial Kind="ViewList" Width="16" Height="16"/>
                                 </hc:SideMenuItem.Icon>
 
-                                <hc:SideMenuItem Header="Lớp học" Tag="StudentClassView">
+                                <hc:SideMenuItem Header="Khoa" Tag="KhoaView">
+                                    <hc:SideMenuItem.Icon>
+                                        <Icon:PackIconMaterial Kind="Domain" Width="14" Height="14"/>
+                                    </hc:SideMenuItem.Icon>
+                                </hc:SideMenuItem>
+
+                                <hc:SideMenuItem Header="Lớp học" Tag="LopHocView">
                                     <hc:SideMenuItem.Icon>
                                         <Icon:PackIconMaterial Kind="AccountGroup" Width="14" Height="14"/>
                                     </hc:SideMenuItem.Icon>
@@ -167,18 +184,12 @@
                                     </hc:SideMenuItem.Icon>
                                 </hc:SideMenuItem>
 
-                                <hc:SideMenuItem Header="Giáo viên" Tag="TeacherView">
+                                <hc:SideMenuItem Header="Niên khóa" Tag="NienKhoaView">
                                     <hc:SideMenuItem.Icon>
-                                        <Icon:PackIconMaterial Kind="AccountTie" Width="14" Height="14"/>
+                                        <Icon:PackIconMaterial Kind="Calendar" Width="14" Height="14"/>
                                     </hc:SideMenuItem.Icon>
                                 </hc:SideMenuItem>
-                            </hc:SideMenuItem>
-
-                            <!-- 4. Cài đặt hệ thống -->
-                            <hc:SideMenuItem Header="Thiết lập chung" Tag="SettingView">
-                                <hc:SideMenuItem.Icon>
-                                    <Icon:PackIconMaterial Kind="Cog" Width="16" Height="16"/>
-                                </hc:SideMenuItem.Icon>
+                                
                             </hc:SideMenuItem>
                         </hc:SideMenu>
                     </Grid>

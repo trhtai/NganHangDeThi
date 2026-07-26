@@ -1,9 +1,9 @@
-﻿<Window x:Class="NganHangDeThi.Views.MonHoc.ChinhSuaMonHocDialogView"
+﻿<Window x:Class="NganHangDeThi.Views.MonHocPage.ChinhSuaMonHocDialogView"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:NganHangDeThi.Views.MonHoc"
+        xmlns:local="clr-namespace:NganHangDeThi.Views.MonHocPage"
         mc:Ignorable="d"
         
         xmlns:hc="https://handyorg.github.io/handycontrol"

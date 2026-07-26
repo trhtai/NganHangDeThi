@@ -12,6 +12,9 @@ public class KhoaRepository(IDbContextFactory<AppDbContext> dbContextFactory) : 
     {
         await using var db = await _dbContextFactory.CreateDbContextAsync(ct);
 
-        return await db.Khoa.ToListAsync(ct);
+        return await db.Khoa
+            .AsNoTracking()
+            .OrderByDescending(x => x.CreatedAt)
+            .ToListAsync(ct);
     }
 }

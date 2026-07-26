@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NganHangDeThi.Data;
 
@@ -10,9 +11,11 @@ using NganHangDeThi.Data;
 namespace NganHangDeThi.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260726141815_RemoveUnSignFieldInLopHoc")]
+    partial class RemoveUnSignFieldInLopHoc
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.10");
@@ -99,33 +102,6 @@ namespace NganHangDeThi.Migrations
                     b.ToTable("ChuongTrinhHoc", (string)null);
                 });
 
-            modelBuilder.Entity("NganHangDeThi.Data.Entities.HocKy", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("NienKhoaId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("TenHocKy")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("NienKhoaId");
-
-                    b.ToTable("HocKy", (string)null);
-                });
-
             modelBuilder.Entity("NganHangDeThi.Data.Entities.Khoa", b =>
                 {
                     b.Property<int>("Id")
@@ -182,6 +158,9 @@ namespace NganHangDeThi.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("NienKhoaId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("TenLop")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -196,6 +175,8 @@ namespace NganHangDeThi.Migrations
 
                     b.HasIndex("MaLop")
                         .IsUnique();
+
+                    b.HasIndex("NienKhoaId");
 
                     b.ToTable("Lop", (string)null);
                 });
@@ -239,6 +220,9 @@ namespace NganHangDeThi.Migrations
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
+
+                    b.Property<int>("NamNhapHoc")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("TenNienKhoa")
                         .IsRequired()
@@ -286,17 +270,6 @@ namespace NganHangDeThi.Migrations
                     b.Navigation("MonHoc");
                 });
 
-            modelBuilder.Entity("NganHangDeThi.Data.Entities.HocKy", b =>
-                {
-                    b.HasOne("NganHangDeThi.Data.Entities.NienKhoa", "NienKhoa")
-                        .WithMany("DsHocKy")
-                        .HasForeignKey("NienKhoaId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("NienKhoa");
-                });
-
             modelBuilder.Entity("NganHangDeThi.Data.Entities.Lop", b =>
                 {
                     b.HasOne("NganHangDeThi.Data.Entities.Khoa", "Khoa")
@@ -305,7 +278,15 @@ namespace NganHangDeThi.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("NganHangDeThi.Data.Entities.NienKhoa", "NienKhoa")
+                        .WithMany("DanhSachLop")
+                        .HasForeignKey("NienKhoaId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.Navigation("Khoa");
+
+                    b.Navigation("NienKhoa");
                 });
 
             modelBuilder.Entity("NganHangDeThi.Data.Entities.MonHoc", b =>
@@ -338,7 +319,7 @@ namespace NganHangDeThi.Migrations
 
             modelBuilder.Entity("NganHangDeThi.Data.Entities.NienKhoa", b =>
                 {
-                    b.Navigation("DsHocKy");
+                    b.Navigation("DanhSachLop");
                 });
 #pragma warning restore 612, 618
         }

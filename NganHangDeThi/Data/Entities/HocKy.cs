@@ -2,15 +2,16 @@
 
 namespace NganHangDeThi.Data.Entities;
 
-public class NienKhoa : IEntity<int>, IAuditable
+public class HocKy : IEntity<int>, IAuditable
 {
     public int Id { get; set; }
-    public string TenNienKhoa { get; set; } = null!; // "2020-2021", "2021-2022"
+    public string TenHocKy { get; set; } = string.Empty; // "Học kỳ 1", "Học kỳ 2", "Học kỳ Hè"
 
     // Audit (Theo dõi lịch sử).
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
 
     // Navigation properties (Khóa ngoại & Quan hệ các bảng).
-    public ICollection<HocKy> DsHocKy { get; set; } = [];
+    public int NienKhoaId { get; set; }
+    public NienKhoa NienKhoa { get; set; } = null!;
 }

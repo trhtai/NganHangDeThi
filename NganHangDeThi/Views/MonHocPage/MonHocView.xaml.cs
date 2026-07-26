@@ -1,10 +1,11 @@
-﻿using NganHangDeThi.Data.Repositories.Enums;
+﻿using CommunityToolkit.Mvvm.Messaging;
+using NganHangDeThi.Data.Repositories.Enums;
+using NganHangDeThi.Messages;
 using NganHangDeThi.ViewModels.Subjects;
-using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace NganHangDeThi.Views.MonHoc;
+namespace NganHangDeThi.Views.MonHocPage;
 
 public partial class MonHocView : UserControl
 {
@@ -36,6 +37,19 @@ public partial class MonHocView : UserControl
             {
                 await vm.LoadCommand.ExecuteAsync(null);
             }
+        };
+
+        // 1. Đăng ký lắng nghe tín hiệu thay đổi định dạng ngày
+        WeakReferenceMessenger.Default.Register<DateFormatChangedMessage>(this, (recipient, message) =>
+        {
+            // Bắt buộc giao diện DataGrid phải render lại (chạy lại Converter)
+            Grid.Items.Refresh();
+        });
+
+        // 2. [Tùy chọn nhưng khuyên dùng] Hủy lắng nghe khi trang bị đóng để dọn dẹp RAM
+        Unloaded += (_, _) =>
+        {
+            WeakReferenceMessenger.Default.Unregister<DateFormatChangedMessage>(this);
         };
     }
 

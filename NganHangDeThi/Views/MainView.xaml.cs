@@ -4,10 +4,12 @@ using MahApps.Metro.IconPacks;
 using Microsoft.Extensions.DependencyInjection;
 using NganHangDeThi.Data.Repositories.Interfaces;
 using NganHangDeThi.Views.Dialogs;
-using NganHangDeThi.Views.MonHoc;
+using NganHangDeThi.Views.KhoaPage;
+using NganHangDeThi.Views.LopPage;
+using NganHangDeThi.Views.MonHocPage;
+using NganHangDeThi.Views.NganHangCauHoiPage;
+using NganHangDeThi.Views.NienKhoaPage;
 using NganHangDeThi.Views.Settings;
-using NganHangDeThi.Views.StudentClasses;
-using NganHangDeThi.Views.Teachers;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -30,6 +32,9 @@ public partial class MainView : System.Windows.Window
 
         // Breadcrumb mặc định.
         SetHomeBreadcrumb();
+
+        // Gán trang mặc định khi mở app lên.
+        Loaded += (_, _) => NavigateTo(QuestionBankMenuItem);
     }
 
     private void SetHomeBreadcrumb()
@@ -74,8 +79,16 @@ public partial class MainView : System.Windows.Window
     // Danh sách Tag có thể được điều hướng
     private static readonly HashSet<string> NavigablePageTags = new()
     {
-        "StudentClassView", "SubjectView", "TeacherView", "SettingView"
+        "QuestionBankMenu",
+        "KhoaView",
+        "LopHocView",
+        "SubjectView",
+        "NienKhoaView"
     };
+
+    // Dùng để lưu MenuItem của trang hiện tại, phục vụ cho logic mở SideBar
+    // sẽ active MenuItem tương ứng.
+    private SideMenuItem? _currentActiveMenu;
 
     // Xác định phần tử người dùng thật sự nhấn vào trước khi HandyControl kịp xử lý.
     private void MainSideMenu_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
@@ -137,10 +150,11 @@ public partial class MainView : System.Windows.Window
         // Điều hướng trang.
         UserControl? page = tag switch
         {
-            "StudentClassView" => ResolvePage<StudentClassView>(),
-            "SubjectView" => ResolvePage<MonHocView>(),
-            "TeacherView" => ResolvePage<TeacherView>(),
-            "SettingView" => ResolvePage<SettingView>(),
+            "QuestionBankMenu"  => ResolvePage<NganHangCauHoiView>(),
+            "KhoaView"          => ResolvePage<KhoaView>(),
+            "LopHocView"        => ResolvePage<LopView>(),
+            "SubjectView"       => ResolvePage<MonHocView>(),
+            "NienKhoaView"      => ResolvePage<NienKhoaView>(),
             _ => null
         };
 
@@ -148,6 +162,8 @@ public partial class MainView : System.Windows.Window
 
         // Cập nhật breadcrumb.
         SetBreadcrumb(GetBreadcrumbPath(item));
+
+        _currentActiveMenu = item;
 
         // Đóng sidebar.
         Sidebar.IsOpen = false;
@@ -288,6 +304,28 @@ public partial class MainView : System.Windows.Window
             Sidebar.IsOpen = true;
         }
     }
+
+    private void Sidebar_Opened(object sender, RoutedEventArgs e)
+    {
+        if (_currentActiveMenu == null) return;
+
+        // Tạm gỡ sự kiện để WPF không hiểu nhầm là người dùng vừa click chọn
+        MainSideMenu.SelectionChanged -= MainSideMenu_SelectionChanged;
+
+        try
+        {
+            // 1. Bật sáng MenuItem tương ứng với trang đang hiển thị
+            _currentActiveMenu.IsSelected = true;
+
+            // 2. Cuộn Menu đến đúng vị trí của Item đó (hữu ích khi danh sách quá dài)
+            _currentActiveMenu.BringIntoView();
+        }
+        finally
+        {
+            // Gắn lại sự kiện lắng nghe click
+            MainSideMenu.SelectionChanged += MainSideMenu_SelectionChanged;
+        }
+    }
     #endregion
 
     #region Window Chrome
@@ -425,6 +463,26 @@ public partial class MainView : System.Windows.Window
             // tránh việc các control khác (như Dialog) vô tình nhận nhầm phím Esc này.
             e.Handled = true;
         }
+    }
+
+    private void SettingButton_Click(object sender, RoutedEventArgs e)
+    {
+        // 1. Tạo một Scope MỚI hoàn toàn, ĐỘC LẬP với _currentPageScope của trang chính bên dưới
+        var scope = App.AppHost!.Services.CreateScope();
+
+        // 2. Lấy SettingView và SettingViewModel ra từ scope này
+        var settingView = scope.ServiceProvider.GetRequiredService<SettingView>();
+
+        // 3. Hiển thị Dialog thông qua HandyControl (nó sẽ trả về đối tượng cửa sổ Dialog)
+        var dialog = Hc.Dialog.Show(settingView);
+
+        // 4. QUAN TRỌNG NHẤT: Thu hồi bộ nhớ khi đóng Dialog
+        // Khi người dùng bấm ra ngoài hoặc tắt dialog, sự kiện Unloaded sẽ nhảy.
+        // Lúc này ta mới Dispose cái scope đi để giải phóng CSDL và ViewModel.
+        dialog.Unloaded += (_, _) =>
+        {
+            scope.Dispose();
+        };
     }
     #endregion
 }

@@ -8,15 +8,21 @@ using NganHangDeThi.Data.Repositories.Interfaces;
 using NganHangDeThi.Helpers;
 using NganHangDeThi.Services;
 using NganHangDeThi.Services.Interfaces;
+using NganHangDeThi.ViewModels.KhoaPage;
+using NganHangDeThi.ViewModels.LopPage;
+using NganHangDeThi.ViewModels.NganHangCauHoiPage;
+using NganHangDeThi.ViewModels.NienKhoaPage;
 using NganHangDeThi.ViewModels.Settings;
 using NganHangDeThi.ViewModels.Subjects;
 using NganHangDeThi.ViewModels.Subjects.Factories;
 using NganHangDeThi.ViewModels.Subjects.Factories.Interfaces;
 using NganHangDeThi.Views;
-using NganHangDeThi.Views.MonHoc;
+using NganHangDeThi.Views.KhoaPage;
+using NganHangDeThi.Views.LopPage;
+using NganHangDeThi.Views.MonHocPage;
+using NganHangDeThi.Views.NganHangCauHoiPage;
+using NganHangDeThi.Views.NienKhoaPage;
 using NganHangDeThi.Views.Settings;
-using NganHangDeThi.Views.StudentClasses;
-using NganHangDeThi.Views.Teachers;
 using System.Windows;
 
 namespace NganHangDeThi;
@@ -47,16 +53,25 @@ public partial class App : Application
                 services.AddSingleton<IToastService, HandyToastService>();
 
                 // Views, ViewModels and Factories.
-                services.AddTransient<StudentClassView>();
-
+                // Cài đặt,
+                services.AddTransient<SettingViewModel>();
+                services.AddTransient<SettingView>();
+                // Ngân hàng câu hỏi.
+                services.AddTransient<NganHangCauHoiViewModel>();
+                services.AddTransient<NganHangCauHoiView>();
+                // Khoa.
+                services.AddTransient<KhoaViewModel>();
+                services.AddTransient<KhoaView>();
+                // Lớp.
+                services.AddTransient<LopViewModel>();
+                services.AddTransient<LopView>();
+                // Môn học.
                 services.AddTransient<ISubjectEditViewModelFactory, SubjectEditViewModelFactory>();
                 services.AddTransient<SubjectViewModel>();
                 services.AddTransient<MonHocView>();
-
-                services.AddTransient<TeacherView>();
-
-                services.AddTransient<SettingViewModel>();
-                services.AddTransient<SettingView>();
+                // Niên khóa.
+                services.AddTransient<NienKhoaViewModel>();
+                services.AddTransient<NienKhoaView>();
 
                 services.AddSingleton<MainView>();
             })

@@ -8,6 +8,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 {
     public DbSet<Khoa> Khoa => Set<Khoa>();
     public DbSet<NienKhoa> NienKhoa => Set<NienKhoa>();
+    public DbSet<HocKy> HocKy => Set<HocKy>();
     public DbSet<Lop> Lop => Set<Lop>();
     public DbSet<ChuongTrinhHoc> ChuongTrinhHoc => Set<ChuongTrinhHoc>();
     public DbSet<MonHoc> MonHoc => Set<MonHoc>();
