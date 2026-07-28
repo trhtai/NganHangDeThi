@@ -151,7 +151,7 @@ public partial class SubjectViewModel : ObservableObject
         var opened = await OpenEditDialogAsync(item);
         if (opened)
         {
-            _toast.Success("Cập nhật lớp học thành công");
+            _toast.Success("Cập nhật môn học thành công");
             await ReloadAsync();
         }
     }

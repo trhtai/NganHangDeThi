@@ -19,6 +19,7 @@ public class NienKhoaConfiguration : IEntityTypeConfiguration<NienKhoa>
             .IsUnique();
 
         builder.Property(e => e.TenNienKhoa)
+            .IsRequired()
             .HasMaxLength(50);
     }
 }

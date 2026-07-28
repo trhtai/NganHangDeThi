@@ -12,8 +12,12 @@ using NganHangDeThi.ViewModels.KhoaPage;
 using NganHangDeThi.ViewModels.KhoaPage.Factories;
 using NganHangDeThi.ViewModels.KhoaPage.Factories.Interfaces;
 using NganHangDeThi.ViewModels.LopPage;
+using NganHangDeThi.ViewModels.LopPage.Factories;
+using NganHangDeThi.ViewModels.LopPage.Factories.Interfaces;
 using NganHangDeThi.ViewModels.NganHangCauHoiPage;
 using NganHangDeThi.ViewModels.NienKhoaPage;
+using NganHangDeThi.ViewModels.NienKhoaPage.Factories;
+using NganHangDeThi.ViewModels.NienKhoaPage.Factories.Interfaces;
 using NganHangDeThi.ViewModels.Settings;
 using NganHangDeThi.ViewModels.Subjects;
 using NganHangDeThi.ViewModels.Subjects.Factories;
@@ -48,6 +52,8 @@ public partial class App : Application
                 services.AddSingleton<ICaiDatRepository, CaiDatRepository>();
                 services.AddSingleton<IMonHocRepository, MonHocRepository>();
                 services.AddSingleton<IKhoaRepository, KhoaRepository>();
+                services.AddSingleton<ILopRepository, LopRepository>();
+                services.AddSingleton<INienKhoaRepository, NienKhoaRepository>();
 
                 // Services.
                 services.AddSingleton<IDateTimeService, DateTimeService>();
@@ -66,6 +72,7 @@ public partial class App : Application
                 services.AddTransient<KhoaViewModel>();
                 services.AddTransient<KhoaView>();
                 // Lớp.
+                services.AddTransient<IChinhSuaLopViewModelFactory, ChinhSuaLopViewModelFactory>();
                 services.AddTransient<LopViewModel>();
                 services.AddTransient<LopView>();
                 // Môn học.
@@ -73,9 +80,10 @@ public partial class App : Application
                 services.AddTransient<SubjectViewModel>();
                 services.AddTransient<MonHocView>();
                 // Niên khóa.
+                services.AddTransient<IChinhSuaNienKhoaViewModelFactory, ChinhSuaNienKhoaViewModelFactory>();
                 services.AddTransient<NienKhoaViewModel>();
                 services.AddTransient<NienKhoaView>();
-
+                // Main view.
                 services.AddSingleton<MainView>();
             })
             .Build();

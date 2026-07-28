@@ -21,8 +21,8 @@ public partial class KhoaView : UserControl
                 {
                     var owner = Window.GetWindow(this);
                     var result = owner is null
-                        ? ChinhSuaKhoaDialogView.ShowDialog(Application.Current.MainWindow, eidtVm)
-                        : ChinhSuaKhoaDialogView.ShowDialog(owner, eidtVm);
+                        ? ChinhSuaKhoaDialog.ShowDialog(Application.Current.MainWindow, eidtVm)
+                        : ChinhSuaKhoaDialog.ShowDialog(owner, eidtVm);
 
                     return Task.FromResult(result == true);
                 };

@@ -21,8 +21,8 @@ public partial class MonHocView : UserControl
                 {
                     var owner = Window.GetWindow(this);
                     var result = owner is null
-                        ? ChinhSuaMonHocDialogView.ShowDialog(Application.Current.MainWindow, eidtVm)
-                        : ChinhSuaMonHocDialogView.ShowDialog(owner, eidtVm);
+                        ? ChinhSuaMonHocDialog.ShowDialog(Application.Current.MainWindow, eidtVm)
+                        : ChinhSuaMonHocDialog.ShowDialog(owner, eidtVm);
 
                     return Task.FromResult(result == true);
                 };

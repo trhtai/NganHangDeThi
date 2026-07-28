@@ -152,7 +152,7 @@ public partial class MainView : System.Windows.Window
         return null;
     }
 
-    private void MainSideMenu_SelectionChanged(object sender, FunctionEventArgs<object> e)
+    private void MainSideMenu_SelectionChanged(object? sender, FunctionEventArgs<object> e)
     {
         // Nếu SelectionChanged này xảy ra do ta vừa tự gọi NavigateTo() thủ công (từ Preview
         // event) gây ra, bỏ qua hoàn toàn để tránh xử lý 2 lần / dispose nhầm scope vừa tạo.

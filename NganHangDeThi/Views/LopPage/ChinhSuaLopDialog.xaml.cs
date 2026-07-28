@@ -1,17 +1,15 @@
-﻿using NganHangDeThi.ViewModels.KhoaPage;
-using NganHangDeThi.ViewModels.Subjects;
-using NganHangDeThi.Views.MonHocPage;
+﻿using NganHangDeThi.ViewModels.LopPage;
 using System.Windows;
 
-namespace NganHangDeThi.Views.KhoaPage;
+namespace NganHangDeThi.Views.LopPage;
 
-public partial class ChinhSuaKhoaDialogView : Window
+public partial class ChinhSuaLopDialog : Window
 {
-    private readonly ChinhSuaKhoaViewModel _viewModel;
+    private readonly ChinhSuaLopViewModel _viewModel;
     private bool _closingFromViewModel;
     private bool _isClosing;
 
-    public ChinhSuaKhoaDialogView(ChinhSuaKhoaViewModel vm)
+    public ChinhSuaLopDialog(ChinhSuaLopViewModel vm)
     {
         InitializeComponent();
         _viewModel = vm;
@@ -27,7 +25,7 @@ public partial class ChinhSuaKhoaDialogView : Window
             }
         };
 
-        Loaded += (_, _) => TenKhoaTextBox.Focus();
+        Loaded += (_, _) => MaLopTextBox.Focus();
 
         Closing += (_, _) =>
         {
@@ -40,9 +38,9 @@ public partial class ChinhSuaKhoaDialogView : Window
         };
     }
 
-    public static bool? ShowDialog(Window owner, ChinhSuaKhoaViewModel viewModel)
+    public static bool? ShowDialog(Window owner, ChinhSuaLopViewModel viewModel)
     {
-        var window = new ChinhSuaKhoaDialogView(viewModel) { Owner = owner };
+        var window = new ChinhSuaLopDialog(viewModel) { Owner = owner };
         window.ShowDialog();
 
         return viewModel.DialogResult;

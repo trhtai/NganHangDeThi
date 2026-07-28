@@ -3,13 +3,13 @@ using System.Windows;
 
 namespace NganHangDeThi.Views.MonHocPage;
 
-public partial class ChinhSuaMonHocDialogView : Window
+public partial class ChinhSuaMonHocDialog : Window
 {
     private readonly SubjectEditViewModel _viewModel;
     private bool _closingFromViewModel;
     private bool _isClosing;
 
-    public ChinhSuaMonHocDialogView(SubjectEditViewModel vm)
+    public ChinhSuaMonHocDialog(SubjectEditViewModel vm)
     {
         InitializeComponent();
         _viewModel = vm;
@@ -47,7 +47,7 @@ public partial class ChinhSuaMonHocDialogView : Window
     /// <summary>Hiển thị modal và trả về true nếu người dùng đã lưu thành công.</summary>
     public static bool? ShowDialog(Window owner, SubjectEditViewModel viewModel)
     {
-        var window = new ChinhSuaMonHocDialogView(viewModel) { Owner = owner };
+        var window = new ChinhSuaMonHocDialog(viewModel) { Owner = owner };
         window.ShowDialog();
 
         return viewModel.DialogResult;

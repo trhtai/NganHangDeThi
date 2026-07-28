@@ -22,9 +22,6 @@ public class LopConfiguration : IEntityTypeConfiguration<Lop>
             .IsRequired()
             .HasMaxLength(20);
 
-        builder.Property(e => e.TenLop)
-            .HasMaxLength(200);
-
         // Khoa: 1-n.
         builder.HasOne(e => e.Khoa)
             .WithMany(e => e.DanhSachLop)

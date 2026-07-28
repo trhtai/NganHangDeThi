@@ -6,7 +6,6 @@ public class Lop : IEntity<int>, IAuditable
 {
     public int Id { get; set; }
     public string MaLop { get; set; } = null!;
-    public string TenLop { get; set; } = string.Empty;
 
     // Audit (Theo dõi lịch sử).
     public DateTime CreatedAt { get; set; }
