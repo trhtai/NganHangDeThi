@@ -11,7 +11,7 @@ namespace NganHangDeThi.Data.Repositories;
 public class MonHocRepository(
     IDbContextFactory<AppDbContext> dbContextFactory,
     IDateTimeService dateTime
-    ) : IMonHocRepository
+) : IMonHocRepository
 {
     private readonly IDbContextFactory<AppDbContext> _dbContextFactory = dbContextFactory;
     private readonly IDateTimeService _dateTime = dateTime;
@@ -80,36 +80,37 @@ public class MonHocRepository(
             .FirstOrDefaultAsync(x => x.Id == id, ct);
     }
 
-    public async Task<bool> TenMonHocExistsAsync(string tenMonHoc, int? excludeId, CancellationToken ct = default)
+    public async Task<bool> TenMonHocExistsAsync(string ten, int? excludeId, CancellationToken ct = default)
     {
         await using var db = await _dbContextFactory.CreateDbContextAsync(ct);
-        var normalized = tenMonHoc.Trim();
+        var normalized = ten.Trim();
 
         return await db.MonHoc
             .AsNoTracking()
             .AnyAsync(x => x.TenMon == normalized && (excludeId == null || x.Id != excludeId), ct);
     }
 
-    public async Task AddAsync(MonHoc monHoc, CancellationToken ct = default)
+    public async Task AddAsync(MonHoc item, CancellationToken ct = default)
     {
-        monHoc.TenMonUnSign = StringHelper.ToUnSign(monHoc.TenMon);
+        item.TenMonUnSign = StringHelper.ToUnSign(item.TenMon);
+        item.CreatedAt = _dateTime.GetVietnamTime();
 
         await using var db = await _dbContextFactory.CreateDbContextAsync(ct);
-        db.MonHoc.Add(monHoc);
+        db.MonHoc.Add(item);
         await db.SaveChangesAsync(ct);
     }
 
-    public async Task UpdateAsync(MonHoc monHoc, CancellationToken ct = default)
+    public async Task UpdateAsync(MonHoc item, CancellationToken ct = default)
     {
-        monHoc.TenMonUnSign = StringHelper.ToUnSign(monHoc.TenMon);
+        item.TenMonUnSign = StringHelper.ToUnSign(item.TenMon);
 
         await using var db = await _dbContextFactory.CreateDbContextAsync(ct);
         await db.MonHoc
-                .Where(x => x.Id == monHoc.Id)
+                .Where(x => x.Id == item.Id)
                 .ExecuteUpdateAsync(setters => setters
-                    .SetProperty(x => x.TenMon, monHoc.TenMon)
-                    .SetProperty(x => x.TenMonUnSign, monHoc.TenMonUnSign)
-                    .SetProperty(x => x.KhoaId, monHoc.KhoaId)
+                    .SetProperty(x => x.TenMon, item.TenMon)
+                    .SetProperty(x => x.TenMonUnSign, item.TenMonUnSign)
+                    .SetProperty(x => x.KhoaId, item.KhoaId)
                     .SetProperty(x => x.UpdatedAt, _dateTime.GetVietnamTime()),
                     ct);
     }

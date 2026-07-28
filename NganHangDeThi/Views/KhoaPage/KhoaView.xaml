@@ -5,8 +5,153 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:NganHangDeThi.Views.KhoaPage"
              mc:Ignorable="d" 
+             
+             xmlns:vm="clr-namespace:NganHangDeThi.ViewModels.KhoaPage"
+             d:DataContext="{d:DesignInstance vm:KhoaViewModel}"
+             xmlns:conv="clr-namespace:NganHangDeThi.Converters"
+             xmlns:entities="clr-namespace:NganHangDeThi.Data.Entities"
+             xmlns:hc="https://handyorg.github.io/handycontrol"
+             xmlns:Icon="http://metro.mahapps.com/winfx/xaml/iconpacks"
+             xmlns:behaviors="clr-namespace:NganHangDeThi.Behaviors"
+             xmlns:comp="clr-namespace:NganHangDeThi.Views.Components"
              d:DesignHeight="450" d:DesignWidth="800">
+
+    <UserControl.Resources>
+        <conv:MyBoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+        <conv:CountToVisibilityConverter x:Key="CountToVisibilityConverter"/>
+        <conv:DynamicDateConverter x:Key="DynamicDateConverter"/>
+    </UserControl.Resources>
+
     <Grid>
-        <TextBlock Text="khoa" />
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!--Row-0: Toolbar-->
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="280"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            
+            <hc:TextBox Grid.Column="0"
+                        Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                        hc:InfoElement.Placeholder="Tìm theo tên khoa..."
+                        Style="{StaticResource TextBoxExtend}"/>
+
+            <Button Grid.Column="1" Margin="10,0,0,0" ToolTip="Làm mới"
+                    Command="{Binding RefreshCommand}"
+                    Style="{StaticResource ButtonPrimary}">
+                <Icon:PackIconMaterial Kind="Refresh"/>
+            </Button>
+
+            <!--Bulk action: chỉ hiện khi có dòng được chọn-->
+            <Button Grid.Column="3" Margin="0,0,10,0"
+                    Content="{Binding SelectedItems.Count, StringFormat=Xóa đã chọn ({0})}"
+                    Command="{Binding DeleteSelectedCommand}"
+                    Style="{StaticResource ButtonDanger}"
+                    Visibility="{Binding HasSelection, Converter={StaticResource BoolToVisibilityConverter}}"
+                    ToolTip="Xóa hàng loạt"/>
+
+            <Button Grid.Column="4" Content="+ Thêm khoa"
+                    Command="{Binding AddCommand}"
+                    Style="{StaticResource ButtonPrimary}"/>
+        </Grid>
+
+        <Grid Grid.Row="1" Margin="0 10 0 0">
+            <DataGrid x:Name="Grid"
+                      ItemsSource="{Binding Items}"
+                      behaviors:DataGridBehavior.BindableSelectedItems="{Binding SelectedItems}"
+                      AutoGenerateColumns="False"
+                      CanUserAddRows="False"
+                      CanUserDeleteRows="False"
+                      CanUserSortColumns="True"
+                      SelectionMode="Extended"
+                      SelectionUnit="FullRow"
+                      IsReadOnly="True"
+                      RowHeaderWidth="50"
+                      RowHeight="45" 
+                      Sorting="Grid_Sorting"
+                      MouseDoubleClick="Grid_MouseDoubleClick"
+                      LoadingRow="Grid_LoadingRow"
+                      
+                      hc:Empty.ShowEmpty="{Binding IsEmpty}"
+                      HeadersVisibility="All"
+          
+                      Style="{StaticResource DataGridBaseStyle}"
+                      GridLinesVisibility="None"
+                      BorderThickness="1"
+                      BorderBrush="{DynamicResource BorderBrush}">
+
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Tên khoa" Binding="{Binding TenKhoa}" Width="*" SortMemberPath="TenKhoa"/>
+
+                    <DataGridTextColumn Header="Ngày tạo" Width="180" 
+                                        Binding="{Binding CreatedAt, Converter={StaticResource DynamicDateConverter}}"
+                                        SortMemberPath="CreatedAt"/>
+
+                    <DataGridTemplateColumn Header="Thao tác" Width="100">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate DataType="{x:Type entities:Khoa}">
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <Button ToolTip="Sửa" 
+                                            Style="{StaticResource ButtonInfo.Small}"
+                                            Margin="0,0,8,0"
+                                            Command="{Binding DataContext.EditCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                            CommandParameter="{Binding}">
+                                        <Icon:PackIconMaterial Kind="PencilOutline" Width="16" Height="16"/>
+                                    </Button>
+                                    <Button ToolTip="Xóa" 
+                                            Style="{StaticResource ButtonDanger.Small}"
+                                            Command="{Binding DataContext.DeleteCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                            CommandParameter="{Binding}">
+                                        <Icon:PackIconMaterial Kind="TrashCanOutline" Width="16" Height="16"/>
+                                    </Button>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </DataGrid.Columns>
+            </DataGrid>
+
+            <comp:LoadingOverlay Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}" />
+        </Grid>
+
+        <!--Row-2: PAGINATION FOOTER-->
+        <Grid Grid.Row="2" Margin="0,12,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Grid.Column="0" VerticalAlignment="Center"
+                       Foreground="{DynamicResource SecondaryTextBrush}" FontSize="12">
+                <Run Text="Tổng:"/>
+                <Run Text="{Binding TotalCount, Mode=OneWay}"/>
+                <Run Text="bản ghi"/>
+            </TextBlock>
+
+            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                <TextBlock Text="Số dòng/trang:" VerticalAlignment="Center" Margin="0,0,6,0" FontSize="12"/>
+                <ComboBox Width="70" ItemsSource="{Binding PageSizeOptions}"
+                  SelectedItem="{Binding PageSize}" Margin="0,0,16,0"/>
+
+                <hc:Pagination PageIndex="{Binding PageIndex, Mode=TwoWay}"
+                               MaxPageCount="{Binding TotalPages}"
+                               IsJumpEnabled="True">
+                    <hc:Interaction.Triggers>
+                        <hc:EventTrigger EventName="PageUpdated">
+                            <hc:EventToCommand Command="{Binding PageUpdatedCommand}" PassEventArgsToCommand="True"/>
+                        </hc:EventTrigger>
+                    </hc:Interaction.Triggers>
+                </hc:Pagination>
+            </StackPanel>
+        </Grid>
     </Grid>
 </UserControl>

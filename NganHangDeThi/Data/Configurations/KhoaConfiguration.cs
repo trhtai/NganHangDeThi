@@ -15,17 +15,8 @@ public class KhoaConfiguration : IEntityTypeConfiguration<Khoa>
         builder.Property(e => e.Id)
             .ValueGeneratedOnAdd();
 
-        builder.HasIndex(e => e.MaKhoa)
-            .IsUnique();
-
-        builder.Property(e => e.MaKhoa)
-            .HasMaxLength(20);
-
         builder.Property(e => e.TenKhoa)
             .IsRequired()
             .HasMaxLength(200);
-
-        builder.Property(e => e.MoTa)
-            .HasMaxLength(500);
     }
 }

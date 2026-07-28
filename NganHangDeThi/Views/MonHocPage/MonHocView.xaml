@@ -97,7 +97,7 @@
 
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="Tên môn học" Binding="{Binding TenMon}" Width="*" SortMemberPath="TenMon"/>
-
+ 
                     <DataGridTextColumn Header="Thuộc Khoa" Binding="{Binding Khoa.TenKhoa}" Width="150" SortMemberPath="Khoa.TenKhoa"/>
 
                     <DataGridTextColumn Header="Ngày tạo" Width="180" 

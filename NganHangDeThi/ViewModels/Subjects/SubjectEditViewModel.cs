@@ -2,7 +2,6 @@
 using CommunityToolkit.Mvvm.Input;
 using NganHangDeThi.Data.Entities;
 using NganHangDeThi.Data.Repositories.Interfaces;
-using NganHangDeThi.Services.Interfaces;
 using System.ComponentModel.DataAnnotations;
 
 namespace NganHangDeThi.ViewModels.Subjects;
@@ -11,7 +10,6 @@ public partial class SubjectEditViewModel : ObservableValidator
 {
     private readonly IMonHocRepository _repository;
     private readonly IKhoaRepository _khoaRepository;
-    private readonly IDateTimeService _dateTime;
     private readonly int? _editingId;
 
     public bool IsEditMode => _editingId.HasValue;
@@ -52,12 +50,10 @@ public partial class SubjectEditViewModel : ObservableValidator
     public SubjectEditViewModel(
         IMonHocRepository repository, 
         IKhoaRepository khoaRepository,
-        IDateTimeService dateTime, 
         MonHoc? monHoc)
     {
         _repository = repository;
         _khoaRepository = khoaRepository;
-        _dateTime = dateTime;
 
         if (monHoc is not null)
         {
@@ -153,7 +149,6 @@ public partial class SubjectEditViewModel : ObservableValidator
                 { 
                     TenMon = TenMonHoc.Trim(),
                     KhoaId = SelectedKhoaId!.Value,
-                    CreatedAt = _dateTime.GetVietnamTime(),
                 });
             }
 

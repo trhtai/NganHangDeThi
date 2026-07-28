@@ -110,7 +110,7 @@
             <hc:TransitioningContentControl x:Name="PageContent" Margin="10" />
 
             <!--Side Menu-->
-            <hc:Drawer x:Name="Sidebar" Dock="Left" ShowMode="Push" MaskCanClose="True" Opened="Sidebar_Opened">
+            <hc:Drawer x:Name="Sidebar" Dock="Left" ShowMode="Push" MaskCanClose="True">
                 <Border Background="{DynamicResource RegionBrush}" Width="300" 
                         BorderThickness="0 1 0 0" BorderBrush="{DynamicResource BorderBrush}">
                     <Grid>

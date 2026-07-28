@@ -1,15 +1,15 @@
-﻿<Window x:Class="NganHangDeThi.Views.MonHocPage.ChinhSuaMonHocDialogView"
+﻿<Window x:Class="NganHangDeThi.Views.KhoaPage.ChinhSuaKhoaDialogView"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:NganHangDeThi.Views.MonHocPage"
+        xmlns:local="clr-namespace:NganHangDeThi.Views.KhoaPage"
         mc:Ignorable="d"
         
         xmlns:hc="https://handyorg.github.io/handycontrol"
         xmlns:conv="clr-namespace:NganHangDeThi.Converters"
-        xmlns:vm="clr-namespace:NganHangDeThi.ViewModels.Subjects"
-        d:DataContext="{d:DesignInstance vm:SubjectEditViewModel}"
+        xmlns:vm="clr-namespace:NganHangDeThi.ViewModels.KhoaPage"
+        d:DataContext="{d:DesignInstance vm:ChinhSuaKhoaViewModel}"
         Title="{Binding DialogTitle}"
         Width="420" MinHeight="250" SizeToContent="Height"
         WindowStyle="ToolWindow"
@@ -23,26 +23,26 @@
 
     <Grid Margin="20">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/> <!-- Title -->
-            <RowDefinition Height="Auto"/> <!-- TenMonHoc TextBox -->
-            <RowDefinition Height="Auto"/> <!-- ComboBox Khoa -->
+            <!-- Title -->
+            <RowDefinition Height="Auto"/>
+            <!-- TenKhoa TextBox -->
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/> <!-- Cancel and Save button -->
+            <!-- Cancel and Save button -->
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <!--Title-->
         <TextBlock Grid.Row="0" Text="{Binding DialogTitle}" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,16"/>
 
-        <!--Tên môn học: real-time validate qua ValidatesOnNotifyDataErrors, HandyControl tự
-        vẽ viền đỏ + tooltip lỗi bên dưới control khi có lỗi.-->
         <StackPanel Grid.Row="1">
             <TextBlock Margin="0,0,0,4">
-                <Run Text="Tên môn học"/>
+                <Run Text="Tên khoa"/>
                 <Run Text=" *" Foreground="{DynamicResource DangerBrush}"/>
             </TextBlock>
-            <hc:TextBox x:Name="TenMonHocTextBox"
-                    Text="{Binding TenMonHoc, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True}"
-                    hc:InfoElement.Placeholder="VD: Lập trình căn bản..."
+            <hc:TextBox x:Name="TenKhoaTextBox"
+                    Text="{Binding TenKhoa, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True}"
+                    hc:InfoElement.Placeholder="VD: Công nghệ thông tin..."
                     MaxLength="200"
                     Style="{StaticResource TextBoxExtend}"/>
 
@@ -51,34 +51,19 @@
                    FontSize="11" Margin="2,4,0,0"
                    Visibility="{Binding DuplicateWarning, Converter={StaticResource StringNotEmptyToVisibilityConverter}}"/>
 
-            <TextBlock Text="{Binding TenMonHocLength, StringFormat={}{0}/200 ký tự}"
+            <TextBlock Text="{Binding TenKhoaLength, StringFormat={}{0}/200 ký tự}"
                    HorizontalAlignment="Right"
                    Foreground="{DynamicResource SecondaryTextBrush}"
                    FontSize="11" Margin="0,4,0,0"/>
         </StackPanel>
 
-        <!-- Chọn Khoa -->
-        <StackPanel Grid.Row="2" Margin="0,12,0,0">
-            <TextBlock Margin="0,0,0,4">
-                <Run Text="Thuộc khoa"/>
-                <Run Text=" *" Foreground="{DynamicResource DangerBrush}"/>
-            </TextBlock>
-            <ComboBox ItemsSource="{Binding DanhSachKhoa}"
-                      SelectedValuePath="Id"
-                      DisplayMemberPath="TenKhoa"
-                      SelectedValue="{Binding SelectedKhoaId, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True}"
-                      hc:InfoElement.Placeholder="-- Chọn khoa quản lý --"
-                      Style="{StaticResource ComboBoxExtend}" />
-        </StackPanel>
-
         <!--Action buttons-->
-        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
             <Button Content="Hủy" Width="90" Margin="0,0,8,0"
                     Command="{Binding CancelCommand}"
                     Style="{StaticResource ButtonDefault}"
                     IsCancel="True"/>
-            <!--Disable ngay khi bấm để tránh double-click trong lúc lưu, đúng chuẩn
-            "Inline spinner nhỏ trên nút"-->
+            
             <Button Content="Lưu"
                     Width="90"
                     Command="{Binding SaveCommand}"

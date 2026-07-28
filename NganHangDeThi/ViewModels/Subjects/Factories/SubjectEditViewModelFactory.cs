@@ -7,19 +7,17 @@ namespace NganHangDeThi.ViewModels.Subjects.Factories;
 
 public class SubjectEditViewModelFactory(
     IMonHocRepository monHocRepository,
-    IKhoaRepository khoaRepository,
-    IDateTimeService dateTime
-    ) : ISubjectEditViewModelFactory
+    IKhoaRepository khoaRepository
+) : ISubjectEditViewModelFactory
 {
     private readonly IMonHocRepository _monHocRepository = monHocRepository;
     private readonly IKhoaRepository _khoaRepository = khoaRepository;
-    private readonly IDateTimeService _dateTime = dateTime;
 
     public SubjectEditViewModel Create(MonHoc? existing)
     {
         return new SubjectEditViewModel(
             _monHocRepository, 
-            _khoaRepository, 
-            _dateTime, existing);
+            _khoaRepository,
+            existing);
     }
 }

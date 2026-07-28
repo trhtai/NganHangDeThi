@@ -6,6 +6,8 @@
              xmlns:local="clr-namespace:NganHangDeThi.Views.Settings"
              mc:Ignorable="d"
              
+             xmlns:vm="clr-namespace:NganHangDeThi.ViewModels.Settings"
+             d:DataContext="{d:DesignInstance vm:SettingViewModel}"
              Width="800"
              xmlns:hc="https://handyorg.github.io/handycontrol"
              xmlns:conv="clr-namespace:NganHangDeThi.Converters"

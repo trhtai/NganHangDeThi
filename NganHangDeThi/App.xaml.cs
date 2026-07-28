@@ -9,6 +9,8 @@ using NganHangDeThi.Helpers;
 using NganHangDeThi.Services;
 using NganHangDeThi.Services.Interfaces;
 using NganHangDeThi.ViewModels.KhoaPage;
+using NganHangDeThi.ViewModels.KhoaPage.Factories;
+using NganHangDeThi.ViewModels.KhoaPage.Factories.Interfaces;
 using NganHangDeThi.ViewModels.LopPage;
 using NganHangDeThi.ViewModels.NganHangCauHoiPage;
 using NganHangDeThi.ViewModels.NienKhoaPage;
@@ -60,6 +62,7 @@ public partial class App : Application
                 services.AddTransient<NganHangCauHoiViewModel>();
                 services.AddTransient<NganHangCauHoiView>();
                 // Khoa.
+                services.AddTransient<IChinhSuaKhoaViewModelFactory, ChinhSuaKhoaViewModelFactory>();
                 services.AddTransient<KhoaViewModel>();
                 services.AddTransient<KhoaView>();
                 // Lớp.

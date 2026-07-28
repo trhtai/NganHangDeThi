@@ -5,9 +5,7 @@ namespace NganHangDeThi.Data.Entities;
 public class Khoa : IEntity<int>, IAuditable
 {
     public int Id { get; set; }
-    public string MaKhoa { get; set; } = string.Empty;
     public string TenKhoa { get; set; } = string.Empty;
-    public string MoTa { get; set; } = string.Empty;
 
     // Audit (Theo dõi lịch sử).
     public DateTime CreatedAt { get; set; }
