@@ -2,8 +2,9 @@
 using NganHangDeThi.Data.Entities;
 using NganHangDeThi.Data.Repositories.Enums;
 using NganHangDeThi.Messages;
-using NganHangDeThi.ViewModels.KhoaPage;
 using NganHangDeThi.ViewModels.NienKhoaPage;
+using NganHangDeThi.ViewModels.Semesters.Factories.Interfaces;
+using NganHangDeThi.Views.HocKyPage;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -12,7 +13,7 @@ namespace NganHangDeThi.Views.NienKhoaPage;
 
 public partial class NienKhoaView : UserControl
 {
-    public NienKhoaView(NienKhoaViewModel nienKhoavm)
+    public NienKhoaView(NienKhoaViewModel nienKhoavm, ISemesterViewModelFactory semesterViewModelFactory)
     {
         InitializeComponent();
 
@@ -28,6 +29,12 @@ public partial class NienKhoaView : UserControl
                         : ChinhSuaNienKhoaDialog.ShowDialog(owner, eidtVm);
 
                     return Task.FromResult(result == true);
+                };
+
+                vm.ManageHocKyHost = (nienKhoa) =>
+                {
+                     var owner = Window.GetWindow(this);
+                     QuanLyHocKyWindow.Show(owner, semesterViewModelFactory, nienKhoa);
                 };
             }
         };
@@ -96,4 +103,3 @@ public partial class NienKhoaView : UserControl
         }
     }
 }
-

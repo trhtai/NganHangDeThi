@@ -8,6 +8,8 @@ using NganHangDeThi.Data.Repositories.Interfaces;
 using NganHangDeThi.Helpers;
 using NganHangDeThi.Services;
 using NganHangDeThi.Services.Interfaces;
+using NganHangDeThi.ViewModels.Chapters.Factories;
+using NganHangDeThi.ViewModels.Chapters.Factories.Interfaces;
 using NganHangDeThi.ViewModels.KhoaPage;
 using NganHangDeThi.ViewModels.KhoaPage.Factories;
 using NganHangDeThi.ViewModels.KhoaPage.Factories.Interfaces;
@@ -18,6 +20,8 @@ using NganHangDeThi.ViewModels.NganHangCauHoiPage;
 using NganHangDeThi.ViewModels.NienKhoaPage;
 using NganHangDeThi.ViewModels.NienKhoaPage.Factories;
 using NganHangDeThi.ViewModels.NienKhoaPage.Factories.Interfaces;
+using NganHangDeThi.ViewModels.Semesters.Factories;
+using NganHangDeThi.ViewModels.Semesters.Factories.Interfaces;
 using NganHangDeThi.ViewModels.Settings;
 using NganHangDeThi.ViewModels.Subjects;
 using NganHangDeThi.ViewModels.Subjects.Factories;
@@ -54,6 +58,8 @@ public partial class App : Application
                 services.AddSingleton<IKhoaRepository, KhoaRepository>();
                 services.AddSingleton<ILopRepository, LopRepository>();
                 services.AddSingleton<INienKhoaRepository, NienKhoaRepository>();
+                services.AddSingleton<IChuongRepository, ChuongRepository>();
+                services.AddSingleton<IHocKyRepository, HocKyRepository>();
 
                 // Services.
                 services.AddSingleton<IDateTimeService, DateTimeService>();
@@ -83,6 +89,12 @@ public partial class App : Application
                 services.AddTransient<IChinhSuaNienKhoaViewModelFactory, ChinhSuaNienKhoaViewModelFactory>();
                 services.AddTransient<NienKhoaViewModel>();
                 services.AddTransient<NienKhoaView>();
+                // Chương.
+                services.AddTransient<IChapterEditViewModelFactory, ChapterEditViewModelFactory>();
+                services.AddTransient<IChapterViewModelFactory, ChapterViewModelFactory>();
+                // Học kỳ.
+                services.AddScoped<ISemesterViewModelFactory, SemesterViewModelFactory>();
+                services.AddScoped<ISemesterEditViewModelFactory, SemesterEditViewModelFactory>();
                 // Main view.
                 services.AddSingleton<MainView>();
             })

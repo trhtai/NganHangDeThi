@@ -90,11 +90,11 @@ public class KhoaRepository(
     public async Task<bool> TenKhoaExistsAsync(string ten, int? excludeId, CancellationToken ct = default)
     {
         await using var db = await _dbContextFactory.CreateDbContextAsync(ct);
-        var normalized = ten.Trim();
+        var normalized = StringHelper.ToUnSign(ten.Trim());
 
         return await db.Khoa
             .AsNoTracking()
-            .AnyAsync(x => x.TenKhoa == normalized && (excludeId == null || x.Id != excludeId), ct);
+            .AnyAsync(x => x.TenKhoaUnSign == normalized && (excludeId == null || x.Id != excludeId), ct);
     }
 
     public async Task AddAsync(Khoa item, CancellationToken ct = default)

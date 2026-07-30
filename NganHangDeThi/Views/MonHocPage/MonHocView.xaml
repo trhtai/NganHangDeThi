@@ -104,10 +104,17 @@
                                         Binding="{Binding CreatedAt, Converter={StaticResource DynamicDateConverter}}"
                                         SortMemberPath="CreatedAt"/>
 
-                    <DataGridTemplateColumn Header="Thao tác" Width="100">
+                    <DataGridTemplateColumn Header="Thao tác" Width="140">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate DataType="{x:Type entities:MonHoc}">
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <Button ToolTip="Quản lý chương"
+                                            Style="{StaticResource ButtonPrimary.Small}"
+                                            Margin="0,0,8,0"
+                                            Command="{Binding DataContext.ManageChuongCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                            CommandParameter="{Binding}">
+                                        <Icon:PackIconMaterial Kind="BookOpenPageVariantOutline" Width="16" Height="16"/>
+                                    </Button>
                                     <Button ToolTip="Sửa" 
                                             Style="{StaticResource ButtonInfo.Small}"
                                             Margin="0,0,8,0"

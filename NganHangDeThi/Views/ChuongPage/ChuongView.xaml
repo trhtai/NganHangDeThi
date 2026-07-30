@@ -1,20 +1,20 @@
-﻿<UserControl x:Class="NganHangDeThi.Views.NienKhoaPage.NienKhoaView"
+﻿<UserControl x:Class="NganHangDeThi.Views.ChuongPage.ChuongView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             xmlns:local="clr-namespace:NganHangDeThi.Views.NienKhoaPage"
+             xmlns:local="clr-namespace:NganHangDeThi.Views.ChuongPage"
              mc:Ignorable="d" 
              
-             xmlns:vm="clr-namespace:NganHangDeThi.ViewModels.NienKhoaPage"
-             d:DataContext="{d:DesignInstance vm:NienKhoaViewModel}"
+             xmlns:vm="clr-namespace:NganHangDeThi.ViewModels.Chapters"
+             d:DataContext="{d:DesignInstance vm:ChapterViewModel}"
              xmlns:conv="clr-namespace:NganHangDeThi.Converters"
              xmlns:entities="clr-namespace:NganHangDeThi.Data.Entities"
              xmlns:hc="https://handyorg.github.io/handycontrol"
              xmlns:Icon="http://metro.mahapps.com/winfx/xaml/iconpacks"
              xmlns:behaviors="clr-namespace:NganHangDeThi.Behaviors"
              xmlns:comp="clr-namespace:NganHangDeThi.Views.Components"
-             d:DesignHeight="450" d:DesignWidth="800">
+             d:DesignHeight="500" d:DesignWidth="800">
 
     <UserControl.Resources>
         <conv:MyBoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
@@ -25,12 +25,21 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
+            <!-- Tiêu đề: tên môn học -->
+            <RowDefinition Height="Auto"/>
+            <!-- Toolbar -->
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!--Row-0: Toolbar-->
-        <Grid Grid.Row="0">
+        <!--Row-0: Tiêu đề, cho biết đang quản lý chương của môn nào-->
+        <TextBlock Grid.Row="0" Margin="0,0,0,12" FontSize="16" FontWeight="SemiBold">
+            <Run Text="Danh sách chương - "/>
+            <Run Text="{Binding TenMon, Mode=OneWay}" FontWeight="Bold"/>
+        </TextBlock>
+
+        <!--Row-1: Toolbar-->
+        <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="280"/>
                 <ColumnDefinition Width="Auto"/>
@@ -41,7 +50,7 @@
 
             <hc:TextBox Grid.Column="0"
                         Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
-                        hc:InfoElement.Placeholder="Tìm theo tên niên khóa..."
+                        hc:InfoElement.Placeholder="Tìm theo tên chương..."
                         Style="{StaticResource TextBoxExtend}"/>
 
             <Button Grid.Column="1" Margin="10,0,0,0" ToolTip="Làm mới"
@@ -58,12 +67,14 @@
                     Visibility="{Binding HasSelection, Converter={StaticResource BoolToVisibilityConverter}}"
                     ToolTip="Xóa hàng loạt"/>
 
-            <Button Grid.Column="4" Content="+ Thêm niên khóa"
+            <Button Grid.Column="4" Content="+ Thêm chương"
                     Command="{Binding AddCommand}"
                     Style="{StaticResource ButtonPrimary}"/>
         </Grid>
 
-        <Grid Grid.Row="1" Margin="0 10 0 0">
+        <!--Row-2: DataGrid + loading overlay + empty state, xếp chồng trong cùng 1 cell-->
+        <Grid Grid.Row="2" Margin="0 10 0 0">
+
             <DataGrid x:Name="Grid"
                       ItemsSource="{Binding Items}"
                       behaviors:DataGridBehavior.BindableSelectedItems="{Binding SelectedItems}"
@@ -78,7 +89,6 @@
                       RowHeight="45" 
                       Sorting="Grid_Sorting"
                       MouseDoubleClick="Grid_MouseDoubleClick"
-                      LoadingRow="Grid_LoadingRow"
                       
                       hc:Empty.ShowEmpty="{Binding IsEmpty}"
                       HeadersVisibility="All"
@@ -89,23 +99,18 @@
                       BorderBrush="{DynamicResource BorderBrush}">
 
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="Tên niên khóa" Binding="{Binding TenNienKhoa}" Width="*" SortMemberPath="TenNienKhoa"/>
+                    <DataGridTextColumn Header="Thứ tự" Binding="{Binding ThuTu}" Width="80" SortMemberPath="ThuTu"/>
+
+                    <DataGridTextColumn Header="Tên chương" Binding="{Binding TenChuong}" Width="*" SortMemberPath="TenChuong"/>
 
                     <DataGridTextColumn Header="Ngày tạo" Width="180" 
                                         Binding="{Binding CreatedAt, Converter={StaticResource DynamicDateConverter}}"
                                         SortMemberPath="CreatedAt"/>
 
-                    <DataGridTemplateColumn Header="Thao tác" Width="140">
+                    <DataGridTemplateColumn Header="Thao tác" Width="100">
                         <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate DataType="{x:Type entities:NienKhoa}">
+                            <DataTemplate DataType="{x:Type entities:Chuong}">
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                    <Button ToolTip="Quản lý học kỳ"
-                                            Style="{StaticResource ButtonPrimary.Small}"
-                                            Margin="0,0,8,0"
-                                            Command="{Binding DataContext.ManageHocKyCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                            CommandParameter="{Binding}">
-                                        <Icon:PackIconMaterial Kind="CalendarRange" Width="16" Height="16"/>
-                                    </Button>
                                     <Button ToolTip="Sửa" 
                                             Style="{StaticResource ButtonInfo.Small}"
                                             Margin="0,0,8,0"
@@ -129,8 +134,8 @@
             <comp:LoadingOverlay Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}" />
         </Grid>
 
-        <!--Row-2: PAGINATION FOOTER-->
-        <Grid Grid.Row="2" Margin="0,12,0,0">
+        <!--Row-3: PAGINATION FOOTER-->
+        <Grid Grid.Row="3" Margin="0,12,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
@@ -141,7 +146,7 @@
                        Foreground="{DynamicResource SecondaryTextBrush}" FontSize="12">
                 <Run Text="Tổng:"/>
                 <Run Text="{Binding TotalCount, Mode=OneWay}"/>
-                <Run Text="bản ghi"/>
+                <Run Text="chương"/>
             </TextBlock>
 
             <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">

@@ -83,11 +83,11 @@ public class MonHocRepository(
     public async Task<bool> TenMonHocExistsAsync(string ten, int? excludeId, CancellationToken ct = default)
     {
         await using var db = await _dbContextFactory.CreateDbContextAsync(ct);
-        var normalized = ten.Trim();
+        var normalized = StringHelper.ToUnSign(ten.Trim());
 
         return await db.MonHoc
             .AsNoTracking()
-            .AnyAsync(x => x.TenMon == normalized && (excludeId == null || x.Id != excludeId), ct);
+            .AnyAsync(x => x.TenMonUnSign == normalized && (excludeId == null || x.Id != excludeId), ct);
     }
 
     public async Task AddAsync(MonHoc item, CancellationToken ct = default)

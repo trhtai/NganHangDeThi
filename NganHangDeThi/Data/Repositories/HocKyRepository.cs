@@ -1,0 +1,123 @@
+﻿using Microsoft.EntityFrameworkCore;
+using NganHangDeThi.Data.Entities;
+using NganHangDeThi.Data.Repositories.Enums;
+using NganHangDeThi.Data.Repositories.Interfaces;
+using NganHangDeThi.Models;
+using NganHangDeThi.Services.Interfaces;
+
+namespace NganHangDeThi.Data.Repositories;
+
+public class HocKyRepository(
+    IDbContextFactory<AppDbContext> dbContextFactory,
+    IDateTimeService dateTime
+) : IHocKyRepository
+{
+    private readonly IDbContextFactory<AppDbContext> _dbContextFactory = dbContextFactory;
+    private readonly IDateTimeService _dateTime = dateTime;
+
+    public async Task<PagedResult<HocKy>> GetPagedAsync(
+        int nienKhoaId,
+        string? searchText,
+        HocKySortColumn sortColumn,
+        SortDirection sortDirection,
+        int pageIndex,
+        int pageSize,
+        CancellationToken ct = default)
+    {
+        if (pageIndex < 1) pageIndex = 1;
+        if (pageSize < 1) pageSize = 20;
+
+        await using var db = await _dbContextFactory.CreateDbContextAsync(ct);
+
+        // Luôn giới hạn trong phạm vi 1 niên khóa.
+        IQueryable<HocKy> query = db.HocKy.AsNoTracking().Where(x => x.NienKhoaId == nienKhoaId);
+
+        if (!string.IsNullOrWhiteSpace(searchText))
+        {
+            var keyword = searchText.Trim();
+            query = query.Where(x => EF.Functions.Like(x.TenHocKy, $"%{keyword}%"));
+        }
+
+        // Sorting.
+        query = (sortColumn, sortDirection) switch
+        {
+            (HocKySortColumn.TenHocKy, SortDirection.Ascending) => query.OrderBy(x => x.TenHocKy),
+            (HocKySortColumn.TenHocKy, SortDirection.Descending) => query.OrderByDescending(x => x.TenHocKy),
+            (HocKySortColumn.CreatedAt, SortDirection.Ascending) => query.OrderBy(x => x.CreatedAt),
+            (HocKySortColumn.CreatedAt, SortDirection.Descending) => query.OrderByDescending(x => x.CreatedAt),
+            _ => query.OrderBy(x => x.CreatedAt)
+        };
+
+        // Query lần 1: đếm tổng, tránh tốn chi phí tải ds nếu rỗng.
+        var totalCount = await query.CountAsync(ct);
+        if (totalCount == 0)
+        {
+            return PagedResult<HocKy>.Empty(pageIndex, pageSize);
+        }
+
+        // Query lần 2: lấy về ds phần tử tương ứng.
+        var items = await query
+            .Skip((pageIndex - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(ct);
+
+        return new PagedResult<HocKy>
+        {
+            Items = items,
+            TotalCount = totalCount,
+            PageIndex = pageIndex,
+            PageSize = pageSize
+        };
+    }
+
+    public async Task<HocKy?> GetByIdAsync(int id, CancellationToken ct = default)
+    {
+        await using var db = await _dbContextFactory.CreateDbContextAsync(ct);
+        return await db.HocKy
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == id, ct);
+    }
+
+    public async Task<bool> TenHocKyExistsAsync(int nienKhoaId, string ten, int? excludeId, CancellationToken ct = default)
+    {
+        await using var db = await _dbContextFactory.CreateDbContextAsync(ct);
+        var normalized = ten.Trim();
+
+        return await db.HocKy
+            .AsNoTracking()
+            .AnyAsync(x => x.NienKhoaId == nienKhoaId
+                        && x.TenHocKy == normalized
+                        && (excludeId == null || x.Id != excludeId), ct);
+    }
+
+    public async Task AddAsync(HocKy item, CancellationToken ct = default)
+    {
+        item.CreatedAt = _dateTime.GetVietnamTime();
+
+        await using var db = await _dbContextFactory.CreateDbContextAsync(ct);
+        db.HocKy.Add(item);
+        await db.SaveChangesAsync(ct);
+    }
+
+    public async Task UpdateAsync(HocKy item, CancellationToken ct = default)
+    {
+        await using var db = await _dbContextFactory.CreateDbContextAsync(ct);
+        await db.HocKy
+                .Where(x => x.Id == item.Id)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(x => x.TenHocKy, item.TenHocKy)
+                    .SetProperty(x => x.UpdatedAt, _dateTime.GetVietnamTime()),
+                    ct);
+    }
+
+    public async Task DeleteRangeAsync(IReadOnlyCollection<int> ids, CancellationToken ct = default)
+    {
+        if (ids.Count == 0) return;
+
+        await using var db = await _dbContextFactory.CreateDbContextAsync(ct);
+
+        await db.HocKy
+            .Where(x => ids.Contains(x.Id))
+            .ExecuteDeleteAsync(ct);
+    }
+}

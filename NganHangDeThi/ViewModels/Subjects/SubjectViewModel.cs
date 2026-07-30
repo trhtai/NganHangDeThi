@@ -167,6 +167,18 @@ public partial class SubjectViewModel : ObservableObject
     }
     #endregion
 
+    #region Manage Chuong command
+    /// <summary>Do View gán, tương tự EditDialogHost - mở cửa sổ Quản lý chương cho 1 môn học.</summary>
+    public Action<MonHoc>? ManageChuongHost { get; set; }
+
+    [RelayCommand]
+    private void ManageChuong(MonHoc? item)
+    {
+        if (item is null) return;
+        ManageChuongHost?.Invoke(item);
+    }
+    #endregion
+
     #region Delete commands.
     [RelayCommand]
     private async Task DeleteAsync(MonHoc? item, CancellationToken ct)

@@ -11,7 +11,8 @@ public class Chuong : IEntity<int>, IAuditable
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
 
+    public string TenChuongUnsign { get; set; } = string.Empty;
+
     public int MonHocId { get; set; }
     public MonHoc MonHoc { get; set; } = null!;
 }
-

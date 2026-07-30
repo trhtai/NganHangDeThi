@@ -1,7 +1,9 @@
 ﻿using CommunityToolkit.Mvvm.Messaging;
 using NganHangDeThi.Data.Repositories.Enums;
 using NganHangDeThi.Messages;
+using NganHangDeThi.ViewModels.Chapters.Factories.Interfaces;
 using NganHangDeThi.ViewModels.Subjects;
+using NganHangDeThi.Views.ChuongPage;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -9,7 +11,7 @@ namespace NganHangDeThi.Views.MonHocPage;
 
 public partial class MonHocView : UserControl
 {
-    public MonHocView(SubjectViewModel subjectViewModel)
+    public MonHocView(SubjectViewModel subjectViewModel, IChapterViewModelFactory chapterViewModelFactory)
     {
         InitializeComponent();
 
@@ -25,6 +27,13 @@ public partial class MonHocView : UserControl
                         : ChinhSuaMonHocDialog.ShowDialog(owner, eidtVm);
 
                     return Task.FromResult(result == true);
+                };
+
+                // Mở cửa sổ Quản lý chương cho môn học tương ứng.
+                vm.ManageChuongHost = (monHoc) =>
+                {
+                    var owner = Window.GetWindow(this);
+                    QuanLyChuongWindow.Show(owner, chapterViewModelFactory, monHoc);
                 };
             }
         };

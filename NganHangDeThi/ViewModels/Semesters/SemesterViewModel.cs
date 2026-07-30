@@ -5,23 +5,28 @@ using NganHangDeThi.Data.Entities;
 using NganHangDeThi.Data.Repositories.Enums;
 using NganHangDeThi.Data.Repositories.Interfaces;
 using NganHangDeThi.Services.Interfaces;
-using NganHangDeThi.ViewModels.NienKhoaPage.Factories.Interfaces;
+using NganHangDeThi.ViewModels.Semesters.Factories.Interfaces;
 using System.Collections.ObjectModel;
+using System.Drawing.Printing;
 
-namespace NganHangDeThi.ViewModels.NienKhoaPage;
+namespace NganHangDeThi.ViewModels.Semesters;
 
-public partial class NienKhoaViewModel : ObservableObject
+public partial class SemesterViewModel : ObservableObject
 {
-    private readonly INienKhoaRepository _repository;
+    private readonly IHocKyRepository _repository;
     private readonly IToastService _toast;
     private readonly IConfirmService _confirm;
-    private readonly IChinhSuaNienKhoaViewModelFactory _chinhSuaNienKhoaViewModelFactory;
+    private readonly ISemesterEditViewModelFactory _semesterEditViewModelFactory;
 
     private CancellationTokenSource? _loadCts;
     private CancellationTokenSource? _searchDebounceCts;
 
-    public ObservableCollection<NienKhoa> Items { get; } = [];
-    public ObservableCollection<NienKhoa> SelectedItems { get; } = [];
+    // Niên khóa đang được quản lý học kỳ - cố định trong suốt vòng đời ViewModel này.
+    public int NienKhoaId { get; }
+    public string TenNienKhoa { get; }
+
+    public ObservableCollection<HocKy> Items { get; } = [];
+    public ObservableCollection<HocKy> SelectedItems { get; } = [];
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsEmpty))]
@@ -43,23 +48,27 @@ public partial class NienKhoaViewModel : ObservableObject
     private string? searchText;
 
     [ObservableProperty]
-    private NienKhoaSortColumn sortColumn = NienKhoaSortColumn.CreatedAt;
+    private HocKySortColumn sortColumn = HocKySortColumn.CreatedAt;
 
     [ObservableProperty]
-    private SortDirection sortDirection = SortDirection.Descending;
+    private SortDirection sortDirection = SortDirection.Ascending;
 
     public bool IsEmpty => !IsLoading && TotalCount == 0;
     public bool HasSelection => SelectedItems.Count > 0;
     public int[] PageSizeOptions { get; } = { 20, 50, 100 };
 
-    public NienKhoaViewModel(
-        INienKhoaRepository repository,
-        IChinhSuaNienKhoaViewModelFactory chinhSuaNienKhoaViewModelFactory,
+    public SemesterViewModel(
+        NienKhoa nienKhoa,
+        IHocKyRepository repository,
+        ISemesterEditViewModelFactory semesterEditViewModelFactory,
         IToastService toast,
         IConfirmService confirm)
     {
+        NienKhoaId = nienKhoa.Id;
+        TenNienKhoa = nienKhoa.TenNienKhoa;
+
         _repository = repository;
-        _chinhSuaNienKhoaViewModelFactory = chinhSuaNienKhoaViewModelFactory;
+        _semesterEditViewModelFactory = semesterEditViewModelFactory;
         _toast = toast;
         _confirm = confirm;
 
@@ -88,7 +97,7 @@ public partial class NienKhoaViewModel : ObservableObject
         try
         {
             var result = await _repository.GetPagedAsync(
-                SearchText, SortColumn, SortDirection, PageIndex, PageSize, cts.Token);
+                NienKhoaId, SearchText, SortColumn, SortDirection, PageIndex, PageSize, cts.Token);
 
             if (cts.IsCancellationRequested) return;
 
@@ -103,7 +112,7 @@ public partial class NienKhoaViewModel : ObservableObject
         catch (OperationCanceledException) { }
         catch (Exception)
         {
-            _toast.Error("Không tải được danh sách niên khóa");
+            _toast.Error("Không tải được danh sách học kỳ");
         }
         finally
         {
@@ -116,7 +125,7 @@ public partial class NienKhoaViewModel : ObservableObject
     [RelayCommand]
     private Task PageUpdatedAsync(FunctionEventArgs<int> e)
     {
-        PageIndex = e.Info; // Lấy số trang người dùng vừa bấm từ UI
+        PageIndex = e.Info;
         return ReloadAsync();
     }
 
@@ -134,65 +143,51 @@ public partial class NienKhoaViewModel : ObservableObject
         var opened = await OpenEditDialogAsync(null);
         if (opened)
         {
-            _toast.Success("Thêm niên khóa thành công");
+            _toast.Success("Thêm học kỳ thành công");
             await ReloadAsync();
         }
     }
 
     [RelayCommand]
-    private async Task EditAsync(NienKhoa? item)
+    private async Task EditAsync(HocKy? item)
     {
         if (item is null) return;
         var opened = await OpenEditDialogAsync(item);
         if (opened)
         {
-            _toast.Success("Cập nhật niên khóa thành công");
+            _toast.Success("Cập nhật học kỳ thành công");
             await ReloadAsync();
         }
     }
 
-    public Func<ChinhSuaNienKhoaViewModel, Task<bool>>? EditDialogHost { get; set; }
+    public Func<SemesterEditViewModel, Task<bool>>? EditDialogHost { get; set; }
 
-    private async Task<bool> OpenEditDialogAsync(NienKhoa? item)
+    private async Task<bool> OpenEditDialogAsync(HocKy? hocKy)
     {
         if (EditDialogHost is null) return false;
-        var editVm = _chinhSuaNienKhoaViewModelFactory.Create(item);
+        var editVm = _semesterEditViewModelFactory.Create(NienKhoaId, hocKy);
 
         return await EditDialogHost(editVm);
     }
     #endregion
 
-    #region Manage HocKy command
-    /// <summary>
-    /// Do View gán, tương tự EditDialogHost - mở cửa sổ Quản lý học kỳ cho 1 niên khóa.
-    /// </summary>
-    public Action<NienKhoa>? ManageHocKyHost { get; set; }
-
-    [RelayCommand]
-    private void ManageHocKy(NienKhoa? item)
-    {
-        if (item is null) return;
-        ManageHocKyHost?.Invoke(item);
-    }
-    #endregion
-
     #region Delete commands.
     [RelayCommand]
-    private async Task DeleteAsync(NienKhoa? item, CancellationToken ct)
+    private async Task DeleteAsync(HocKy? item, CancellationToken ct)
     {
         if (item is null) return;
-        if (!_confirm.Confirm($"Bạn có chắc muốn xóa niên khóa \"{item.TenNienKhoa}\"?")) return;
+        if (!_confirm.Confirm($"Bạn có chắc muốn xóa \"{item.TenHocKy}\"?")) return;
 
         try
         {
             IsLoading = true;
             await _repository.DeleteRangeAsync(new[] { item.Id }, ct);
-            _toast.Success("Đã xóa niên khóa");
+            _toast.Success("Đã xóa học kỳ");
             await ReloadAsync();
         }
         catch (Exception ex)
         {
-            _toast.Error("Không thể xóa niên khóa. Lỗi: " + ex.Message);
+            _toast.Error("Không thể xóa học kỳ. Lỗi: " + ex.Message);
         }
         finally
         {
@@ -205,7 +200,7 @@ public partial class NienKhoaViewModel : ObservableObject
     {
         var count = SelectedItems.Count;
         if (count == 0) return;
-        if (!_confirm.Confirm($"Bạn có chắc muốn xóa {count} niên khóa đã chọn?")) return;
+        if (!_confirm.Confirm($"Bạn có chắc muốn xóa {count} học kỳ đã chọn?")) return;
 
         try
         {
@@ -213,14 +208,14 @@ public partial class NienKhoaViewModel : ObservableObject
             var ids = SelectedItems.Select(x => x.Id).ToArray();
 
             await _repository.DeleteRangeAsync(ids, ct);
-            _toast.Success($"Đã xóa {count} niên khóa");
+            _toast.Success($"Đã xóa {count} học kỳ");
 
             SelectedItems.Clear();
             await ReloadAsync();
         }
         catch (Exception)
         {
-            _toast.Error("Không thể xóa danh sách niên khóa đã chọn!");
+            _toast.Error("Không thể xóa danh sách học kỳ đã chọn!");
         }
         finally
         {
@@ -255,7 +250,7 @@ public partial class NienKhoaViewModel : ObservableObject
     [RelayCommand]
     private void ChangeSort(string columnName)
     {
-        var column = Enum.Parse<NienKhoaSortColumn>(columnName);
+        var column = Enum.Parse<HocKySortColumn>(columnName);
         if (SortColumn == column)
         {
             SortDirection = SortDirection == SortDirection.Ascending
