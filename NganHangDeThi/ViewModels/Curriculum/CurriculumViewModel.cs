@@ -5,23 +5,28 @@ using NganHangDeThi.Data.Entities;
 using NganHangDeThi.Data.Repositories.Enums;
 using NganHangDeThi.Data.Repositories.Interfaces;
 using NganHangDeThi.Services.Interfaces;
-using NganHangDeThi.ViewModels.LopPage.Factories.Interfaces;
+using NganHangDeThi.ViewModels.Curriculum.Factories.Interfaces;
 using System.Collections.ObjectModel;
+using System.Drawing.Printing;
 
-namespace NganHangDeThi.ViewModels.LopPage;
+namespace NganHangDeThi.ViewModels.Curriculum;
 
-public partial class LopViewModel : ObservableObject
+public partial class CurriculumViewModel : ObservableObject
 {
-    private readonly ILopRepository _repository;
+    private readonly IChuongTrinhHocRepository _repository;
     private readonly IToastService _toast;
     private readonly IConfirmService _confirm;
-    private readonly IChinhSuaLopViewModelFactory _chinhSuaLopViewModelFactory;
+    private readonly ICurriculumEditViewModelFactory _curriculumEditViewModelFactory;
 
     private CancellationTokenSource? _loadCts;
     private CancellationTokenSource? _searchDebounceCts;
 
-    public ObservableCollection<Lop> Items { get; } = [];
-    public ObservableCollection<Lop> SelectedItems { get; } = [];
+    // Lớp học đang được quản lý môn học - cố định trong suốt vòng đời ViewModel này.
+    public int LopId { get; }
+    public string MaLop { get; }
+
+    public ObservableCollection<ChuongTrinhHoc> Items { get; } = [];
+    public ObservableCollection<ChuongTrinhHoc> SelectedItems { get; } = [];
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsEmpty))]
@@ -40,10 +45,10 @@ public partial class LopViewModel : ObservableObject
     private int totalPages = 1;
 
     [ObservableProperty]
-    private string? searchText; // Cho mã lớp.
+    private string? searchText;
 
     [ObservableProperty]
-    private LopSortColumn sortColumn = LopSortColumn.CreatedAt;
+    private CurriculumSortColumn sortColumn = CurriculumSortColumn.NamHoc;
 
     [ObservableProperty]
     private SortDirection sortDirection = SortDirection.Descending;
@@ -52,14 +57,18 @@ public partial class LopViewModel : ObservableObject
     public bool HasSelection => SelectedItems.Count > 0;
     public int[] PageSizeOptions { get; } = { 20, 50, 100 };
 
-    public LopViewModel(
-        ILopRepository repository,
-        IChinhSuaLopViewModelFactory chinhSuaLopViewModelFactory,
+    public CurriculumViewModel(
+        Lop lop,
+        IChuongTrinhHocRepository repository,
+        ICurriculumEditViewModelFactory curriculumEditViewModelFactory,
         IToastService toast,
         IConfirmService confirm)
     {
+        LopId = lop.Id;
+        MaLop = lop.MaLop;
+
         _repository = repository;
-        _chinhSuaLopViewModelFactory = chinhSuaLopViewModelFactory;
+        _curriculumEditViewModelFactory = curriculumEditViewModelFactory;
         _toast = toast;
         _confirm = confirm;
 
@@ -88,7 +97,7 @@ public partial class LopViewModel : ObservableObject
         try
         {
             var result = await _repository.GetPagedAsync(
-                SearchText, SortColumn, SortDirection, PageIndex, PageSize, cts.Token);
+                LopId, SearchText, SortColumn, SortDirection, PageIndex, PageSize, cts.Token);
 
             if (cts.IsCancellationRequested) return;
 
@@ -103,7 +112,7 @@ public partial class LopViewModel : ObservableObject
         catch (OperationCanceledException) { }
         catch (Exception)
         {
-            _toast.Error("Không tải được danh sách lớp học");
+            _toast.Error("Không tải được danh sách môn học của lớp");
         }
         finally
         {
@@ -116,7 +125,7 @@ public partial class LopViewModel : ObservableObject
     [RelayCommand]
     private Task PageUpdatedAsync(FunctionEventArgs<int> e)
     {
-        PageIndex = e.Info; // Lấy số trang người dùng vừa bấm từ UI
+        PageIndex = e.Info;
         return ReloadAsync();
     }
 
@@ -134,65 +143,51 @@ public partial class LopViewModel : ObservableObject
         var opened = await OpenEditDialogAsync(null);
         if (opened)
         {
-            _toast.Success("Thêm lớp học thành công");
+            _toast.Success("Thêm môn học vào lớp thành công");
             await ReloadAsync();
         }
     }
 
     [RelayCommand]
-    private async Task EditAsync(Lop? item)
+    private async Task EditAsync(ChuongTrinhHoc? item)
     {
         if (item is null) return;
         var opened = await OpenEditDialogAsync(item);
         if (opened)
         {
-            _toast.Success("Cập nhật lớp học thành công");
+            _toast.Success("Cập nhật thành công");
             await ReloadAsync();
         }
     }
 
-    public Func<ChinhSuaLopViewModel, Task<bool>>? EditDialogHost { get; set; }
+    public Func<CurriculumEditViewModel, Task<bool>>? EditDialogHost { get; set; }
 
-    private async Task<bool> OpenEditDialogAsync(Lop? lop)
+    private async Task<bool> OpenEditDialogAsync(ChuongTrinhHoc? item)
     {
         if (EditDialogHost is null) return false;
-        var editVm = _chinhSuaLopViewModelFactory.Create(lop);
+        var editVm = _curriculumEditViewModelFactory.Create(LopId, item);
 
         return await EditDialogHost(editVm);
     }
     #endregion
 
-    #region Manage Curriculum command
-    /// <summary>
-    /// Do View gán, tương tự EditDialogHost - mở cửa sổ Quản lý môn học cho 1 lớp.
-    /// </summary>
-    public Action<Lop>? ManageCurriculumHost { get; set; }
-
-    [RelayCommand]
-    private void ManageCurriculum(Lop? item)
-    {
-        if (item is null) return;
-        ManageCurriculumHost?.Invoke(item);
-    }
-    #endregion
-
     #region Delete commands.
     [RelayCommand]
-    private async Task DeleteAsync(Lop? item, CancellationToken ct)
+    private async Task DeleteAsync(ChuongTrinhHoc? item, CancellationToken ct)
     {
         if (item is null) return;
-        if (!_confirm.Confirm($"Bạn có chắc muốn xóa lớp \"{item.MaLop}\"?")) return;
+        if (!_confirm.Confirm($"Bạn có chắc muốn xóa môn \"{item.MonHoc.TenMon}\" (năm học {item.NamHoc}) khỏi lớp?")) return;
 
         try
         {
             IsLoading = true;
             await _repository.DeleteRangeAsync(new[] { item.Id }, ct);
-            _toast.Success("Đã xóa lớp học");
+            _toast.Success("Đã xóa khỏi chương trình học");
             await ReloadAsync();
         }
         catch (Exception ex)
         {
-            _toast.Error("Không thể xóa lớp học. Lỗi: " + ex.Message);
+            _toast.Error("Không thể xóa. Lỗi: " + ex.Message);
         }
         finally
         {
@@ -205,7 +200,7 @@ public partial class LopViewModel : ObservableObject
     {
         var count = SelectedItems.Count;
         if (count == 0) return;
-        if (!_confirm.Confirm($"Bạn có chắc muốn xóa {count} lớp học đã chọn?")) return;
+        if (!_confirm.Confirm($"Bạn có chắc muốn xóa {count} môn học đã chọn khỏi lớp?")) return;
 
         try
         {
@@ -213,14 +208,14 @@ public partial class LopViewModel : ObservableObject
             var ids = SelectedItems.Select(x => x.Id).ToArray();
 
             await _repository.DeleteRangeAsync(ids, ct);
-            _toast.Success($"Đã xóa {count} lớp học");
+            _toast.Success($"Đã xóa {count} môn học khỏi lớp");
 
             SelectedItems.Clear();
             await ReloadAsync();
         }
         catch (Exception)
         {
-            _toast.Error("Không thể xóa danh sách lớp học đã chọn!");
+            _toast.Error("Không thể xóa danh sách môn học đã chọn!");
         }
         finally
         {
@@ -255,7 +250,7 @@ public partial class LopViewModel : ObservableObject
     [RelayCommand]
     private void ChangeSort(string columnName)
     {
-        var column = Enum.Parse<LopSortColumn>(columnName);
+        var column = Enum.Parse<CurriculumSortColumn>(columnName);
         if (SortColumn == column)
         {
             SortDirection = SortDirection == SortDirection.Ascending

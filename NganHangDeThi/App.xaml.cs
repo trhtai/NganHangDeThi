@@ -10,6 +10,8 @@ using NganHangDeThi.Services;
 using NganHangDeThi.Services.Interfaces;
 using NganHangDeThi.ViewModels.Chapters.Factories;
 using NganHangDeThi.ViewModels.Chapters.Factories.Interfaces;
+using NganHangDeThi.ViewModels.Curriculum.Factories;
+using NganHangDeThi.ViewModels.Curriculum.Factories.Interfaces;
 using NganHangDeThi.ViewModels.KhoaPage;
 using NganHangDeThi.ViewModels.KhoaPage.Factories;
 using NganHangDeThi.ViewModels.KhoaPage.Factories.Interfaces;
@@ -60,6 +62,7 @@ public partial class App : Application
                 services.AddSingleton<INienKhoaRepository, NienKhoaRepository>();
                 services.AddSingleton<IChuongRepository, ChuongRepository>();
                 services.AddSingleton<IHocKyRepository, HocKyRepository>();
+                services.AddSingleton<IChuongTrinhHocRepository, ChuongTrinhHocRepository>();
 
                 // Services.
                 services.AddSingleton<IDateTimeService, DateTimeService>();
@@ -95,6 +98,9 @@ public partial class App : Application
                 // Học kỳ.
                 services.AddScoped<ISemesterViewModelFactory, SemesterViewModelFactory>();
                 services.AddScoped<ISemesterEditViewModelFactory, SemesterEditViewModelFactory>();
+                // Chuong trinh hoc.
+                services.AddScoped<ICurriculumViewModelFactory, CurriculumViewModelFactory>();
+                services.AddScoped<ICurriculumEditViewModelFactory, CurriculumEditViewModelFactory>();
                 // Main view.
                 services.AddSingleton<MainView>();
             })

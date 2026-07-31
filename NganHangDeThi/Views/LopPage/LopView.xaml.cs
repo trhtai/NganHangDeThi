@@ -2,7 +2,9 @@
 using NganHangDeThi.Data.Entities;
 using NganHangDeThi.Data.Repositories.Enums;
 using NganHangDeThi.Messages;
+using NganHangDeThi.ViewModels.Curriculum.Factories.Interfaces;
 using NganHangDeThi.ViewModels.LopPage;
+using NganHangDeThi.Views.ChuongTrinhHocPage;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -11,7 +13,7 @@ namespace NganHangDeThi.Views.LopPage;
 
 public partial class LopView : UserControl
 {
-    public LopView(LopViewModel lopVm)
+    public LopView(LopViewModel lopVm, ICurriculumViewModelFactory curriculumViewModelFactory)
     {
         InitializeComponent();
 
@@ -27,6 +29,12 @@ public partial class LopView : UserControl
                         : ChinhSuaLopDialog.ShowDialog(owner, eidtVm);
 
                     return Task.FromResult(result == true);
+                };
+
+                vm.ManageCurriculumHost = (lop) =>
+                {
+                    var owner = Window.GetWindow(this);
+                    QuanLyChuongTrinhHocWindow.Show(owner, curriculumViewModelFactory, lop);
                 };
             }
         };

@@ -1,0 +1,97 @@
+﻿<Window x:Class="NganHangDeThi.Views.ChuongTrinhHocPage.ChinhSuaChuongTrinhHocDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:NganHangDeThi.Views.ChuongTrinhHocPage"
+        mc:Ignorable="d"
+        
+        xmlns:hc="https://handyorg.github.io/handycontrol"
+        xmlns:conv="clr-namespace:NganHangDeThi.Converters"
+        xmlns:vm="clr-namespace:NganHangDeThi.ViewModels.Curriculum"
+        d:DataContext="{d:DesignInstance vm:CurriculumEditViewModel}"
+        Title="{Binding DialogTitle}"
+        Width="420" MinHeight="280" SizeToContent="Height"
+        WindowStyle="ToolWindow"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Background="{DynamicResource RegionBrush}">
+
+    <Window.Resources>
+        <conv:StringNotEmptyToVisibilityConverter x:Key="StringNotEmptyToVisibilityConverter"/>
+        <conv:MyBoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+    </Window.Resources>
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <!-- Title -->
+            <RowDefinition Height="Auto"/>
+            <!-- Chọn môn học -->
+            <RowDefinition Height="Auto"/>
+            <!-- Năm học -->
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <!-- Cancel and Save button -->
+        </Grid.RowDefinitions>
+
+        <!--Title-->
+        <TextBlock Grid.Row="0" Text="{Binding DialogTitle}" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,16"/>
+
+        <!--Chọn môn học: ComboBox có thể gõ để tìm nhanh trong danh mục-->
+        <StackPanel Grid.Row="1">
+            <TextBlock Margin="0,0,0,4">
+                <Run Text="Môn học"/>
+                <Run Text=" *" Foreground="{DynamicResource DangerBrush}"/>
+            </TextBlock>
+            <Grid>
+                <ComboBox x:Name="MonHocComboBox"
+                          ItemsSource="{Binding MonHocOptions}"
+                          SelectedItem="{Binding SelectedMonHoc, ValidatesOnNotifyDataErrors=True}"
+                          DisplayMemberPath="TenMon"
+                          IsEditable="True"
+                          IsTextSearchEnabled="True"
+                          IsTextSearchCaseSensitive="False"
+                          TextSearch.TextPath="TenMon"
+                          StaysOpenOnEdit="True"
+                          hc:InfoElement.Placeholder="Gõ để tìm môn học..."/>
+
+                <TextBlock Text="Đang tải danh mục môn học..."
+                           Foreground="{DynamicResource SecondaryTextBrush}"
+                           FontSize="11" Margin="4,0,0,0" VerticalAlignment="Center"
+                           IsHitTestVisible="False"
+                           Visibility="{Binding IsLoadingOptions, Converter={StaticResource BoolToVisibilityConverter}}"/>
+            </Grid>
+
+            <TextBlock Text="{Binding DuplicateWarning}"
+                   Foreground="{DynamicResource DangerBrush}"
+                   FontSize="11" Margin="2,4,0,0"
+                   Visibility="{Binding DuplicateWarning, Converter={StaticResource StringNotEmptyToVisibilityConverter}}"/>
+        </StackPanel>
+
+        <!--Năm học-->
+        <StackPanel Grid.Row="2" Margin="0,12,0,0">
+            <TextBlock Margin="0,0,0,4">
+                <Run Text="Năm học"/>
+                <Run Text=" *" Foreground="{DynamicResource DangerBrush}"/>
+            </TextBlock>
+            <hc:TextBox Text="{Binding NamHoc, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True}"
+                    hc:InfoElement.Placeholder="VD: 2024"
+                    PreviewTextInput="NamHocTextBox_PreviewTextInput"
+                    Style="{StaticResource TextBoxExtend}"/>
+        </StackPanel>
+
+        <!--Action buttons-->
+        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
+            <Button Content="Hủy" Width="90" Margin="0,0,8,0"
+                    Command="{Binding CancelCommand}"
+                    Style="{StaticResource ButtonDefault}"
+                    IsCancel="True"/>
+            <Button Content="Lưu"
+                    Width="90"
+                    Command="{Binding SaveCommand}"
+                    Style="{StaticResource ButtonPrimary}"
+                    IsDefault="True"/>
+        </StackPanel>
+    </Grid>
+</Window>
