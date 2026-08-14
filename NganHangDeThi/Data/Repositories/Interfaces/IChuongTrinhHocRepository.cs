@@ -23,9 +23,11 @@ public interface IChuongTrinhHocRepository
     Task<bool> ExistsAsync(int lopId, int monHocId, int namHoc, int? excludeId, CancellationToken ct = default);
 
     /// <summary>
-    /// Lấy toàn bộ danh mục môn học để đổ vào ComboBox chọn môn khi thêm/sửa.
+    /// Lấy danh mục môn học CHƯA được gán cho lớp này, dùng đổ vào ComboBox.
+    /// Khi sửa (excludeChuongTrinhHocId != null), môn đang được gán ở chính bản ghi đó
+    /// vẫn được giữ lại trong danh sách để không bị "biến mất" khỏi ComboBox.
     /// </summary>
-    Task<List<MonHoc>> GetMonHocOptionsAsync(CancellationToken ct = default);
+    Task<List<MonHoc>> GetMonHocOptionsAsync(int lopId, int? excludeChuongTrinhHocId, CancellationToken ct = default);
 
     Task AddAsync(ChuongTrinhHoc item, CancellationToken ct = default);
     Task UpdateAsync(ChuongTrinhHoc item, CancellationToken ct = default);

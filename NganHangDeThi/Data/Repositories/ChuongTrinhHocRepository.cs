@@ -93,11 +93,19 @@ public class ChuongTrinhHocRepository(
                         && (excludeId == null || x.Id != excludeId), ct);
     }
 
-    public async Task<List<MonHoc>> GetMonHocOptionsAsync(CancellationToken ct = default)
+    public async Task<List<MonHoc>> GetMonHocOptionsAsync(int lopId, int? excludeChuongTrinhHocId, CancellationToken ct = default)
     {
         await using var db = await _dbContextFactory.CreateDbContextAsync(ct);
+
+        // Các môn học mà lớp này ĐÃ được gán (bỏ qua chính bản ghi đang sửa,
+        // để môn đang chọn không bị loại khỏi danh sách khi mở dialog Sửa).
+        var usedMonHocIds = db.ChuongTrinhHoc
+            .Where(x => x.LopId == lopId && (excludeChuongTrinhHocId == null || x.Id != excludeChuongTrinhHocId))
+            .Select(x => x.MonHocId);
+
         return await db.MonHoc
             .AsNoTracking()
+            .Where(x => !usedMonHocIds.Contains(x.Id))
             .OrderBy(x => x.TenMonUnSign)
             .ToListAsync(ct);
     }

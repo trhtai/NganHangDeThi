@@ -70,7 +70,7 @@ public partial class App : Application
                 services.AddSingleton<IToastService, HandyToastService>();
 
                 // Views, ViewModels and Factories.
-                // Cài đặt,
+                // Cài đặt.
                 services.AddTransient<SettingViewModel>();
                 services.AddTransient<SettingView>();
                 // Ngân hàng câu hỏi.

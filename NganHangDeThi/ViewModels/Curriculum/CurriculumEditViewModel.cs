@@ -71,7 +71,7 @@ public partial class CurriculumEditViewModel : ObservableValidator
     {
         try
         {
-            var options = await _repository.GetMonHocOptionsAsync();
+            var options = await _repository.GetMonHocOptionsAsync(_lopId, _editingId);
 
             MonHocOptions.Clear();
             foreach (var mh in options) MonHocOptions.Add(mh);
